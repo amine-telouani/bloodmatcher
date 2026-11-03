@@ -1,4 +1,4 @@
-package com.amine.bloodmatcher;
+package com.bloodmatcher.bloodmatcher;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
