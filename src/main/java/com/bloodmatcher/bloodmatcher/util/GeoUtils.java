@@ -14,4 +14,8 @@ public class GeoUtils {
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return EARTH_RADIUS_KM * c;
     }
+
+    public static boolean isWithinRadius(double lat1, double lon1, double lat2, double lon2, double radiusKm){
+        return distanceKm(lat1, lon1, lat2, lon2) <= radiusKm;
+    }
 }
