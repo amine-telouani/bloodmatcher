@@ -10,7 +10,7 @@ public class GeoUtils {
         double dLon = Math.toRadians(lon2 - lon1);
         double lat1Rad = Math.toRadians(lat1);
         double lat2Rad = Math.toRadians(lat2);
-        double a = Math.pow(Math.sin(dLat/2), 2) + Math.cos(lat1Rad) * Math.cos(lat1Rad) * Math.pow(Math.sin(dLon/2), 2);
+        double a = Math.pow(Math.sin(dLat/2), 2) + Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.pow(Math.sin(dLon/2), 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return EARTH_RADIUS_KM * c;
     }

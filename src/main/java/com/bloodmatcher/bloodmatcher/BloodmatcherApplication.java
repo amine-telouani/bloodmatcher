@@ -1,4 +1,4 @@
-package com.bloodmatcher.bloodmatcher.enums;
+package com.bloodmatcher.bloodmatcher;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
