@@ -53,12 +53,18 @@ Tables are created automatically by Hibernate (`ddl-auto=update`).
 
 ## 5. Set your DB password (never commit it)
 
-The password is read from an environment variable, not stored in the repo.
+The password is read from an environment variable, not stored in the repo. `application.properties` must keep reading exactly `spring.datasource.password=${DB_PASSWORD}`.
 
-In IntelliJ: Run > Edit Configurations > select `BloodmatcherApplication` > Environment variables, then add:
+1. Run the app once from the green arrow next to `main` in `BloodmatcherApplication`. It fails to connect, but IntelliJ creates the run configuration.
+2. Run > Edit Configurations > select `BloodmatcherApplication` > Modify options > tick **Environment variables**.
+3. Add `DB_PASSWORD=your_postgres_password` (no quotes, no spaces, no trailing `;`).
+4. If the configuration name is shown in italics, choose **Save Configuration**.
+5. Run again.
+
+Before every commit, check that no real password is in the diff:
 
 ```
-DB_PASSWORD=your_postgres_password
+git diff src/main/resources/application.properties
 ```
 
 ## 6. Enable Lombok
@@ -75,17 +81,20 @@ Run `BloodmatcherApplication`. You should see in the console:
 - `Tomcat started on port 8080`
 - A line with `Using generated security password: ...`
 
-Open http://localhost:8080 and log in with user `user` and the generated password. A Whitelabel 404 page after login is expected for now (no controllers yet).
+Open http://localhost:8080/api/requests and log in with user `user` and the generated password. A Whitelabel 404 page after login is expected for now (no controllers yet). `/api/auth/**` is public and needs no login.
 
 ## 8. Run the tests
 
-Right-click a test class in the Project panel > Run. Tests live in `src/test/java`, in the same package structure as the code. Or from a terminal at the project root: `mvn test` (`mvnw test` on Windows with the wrapper).
+Right-click the `java` folder under `src/test` > Run 'All Tests', or a single test class > Run. Tests live in `src/test/java`, in the same package structure as the code. From a terminal at the project root: `.\mvnw test` on Windows, `./mvnw test` elsewhere.
+
+`BloodmatcherApplicationTests` starts the whole app, so it needs PostgreSQL running and `DB_PASSWORD` set for tests too: Run > Edit Configurations > Edit configuration templates > JUnit > Environment variables > add `DB_PASSWORD=your_postgres_password`.
 
 ## 9. Common problems
 
 | Problem | Fix |
 |---------|-----|
 | `password authentication failed` | `DB_PASSWORD` is missing or wrong in the run configuration |
+| `password authentication failed` but the password works in pgAdmin | The variable is not reaching Spring. Check that the run configuration exists and is saved, has no typo, and that `application.properties` reads exactly `${DB_PASSWORD}` |
 | `database "bloodmatcher" does not exist` | Create it in pgAdmin |
 | Connection refused on 5432 | PostgreSQL is not running |
 | `release version 21 not supported` | Your JDK is older than 21 |
@@ -124,9 +133,14 @@ git checkout -b feature/your-task
 - Commit small, with clear messages. Push the branch, open a Pull Request, let your partner glance at it, merge, then both run `git pull` on main.
 - Do not edit the same file at the same time. `application.properties` and `pom.xml` are shared, so warn each other before touching them.
 
-## 12. Team and branches
+## 12. Team, branches and status
 
-| Partner | Branches |
-|---------|----------|
-| A | `feature/matching`, `feature/security`, `feature/request-endpoints` |
-| B | `feature/entities` (first, A depends on it), `feature/scheduler-events`, `feature/admin-seed` |
+| Partner | Branches | Status |
+|---------|----------|--------|
+| A | `feature/matching` | merged (BloodType, GeoUtils, eligibility, tests) |
+| A | `feature/security` | merged (SecurityConfig: BCrypt, filter chain, method security) |
+| A | `feature/request-endpoints` | not started |
+| B | `feature/entities` (A depends on it) | in progress |
+| B | `feature/scheduler-events`, `feature/admin-seed` | not started |
+
+Shared names: enums in `enums` (`BloodType` constants `A_POS, A_NEG, B_POS, B_NEG, AB_POS, AB_NEG, O_POS, O_NEG`); latitude and longitude are `double`, `lastDonationDate` is `LocalDate`, `available` is `boolean`; every enum is stored with `@Enumerated(EnumType.STRING)`.
