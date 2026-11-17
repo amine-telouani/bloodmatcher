@@ -2,9 +2,7 @@ package com.bloodmatcher.bloodmatcher.service;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -76,5 +74,30 @@ class MatchingRulesTest {
         MatchingRules.rank(originalList);
         assertEquals(List.of(a, b), originalList);
     }
+
+    @Test
+    void fiveGoesToFifteen(){
+
+        OptionalInt result = MatchingRules.nextRadius(5);
+        assertEquals(OptionalInt.of(15), result);
+
+    }
+
+    @Test
+    void sixtyStops(){
+
+        OptionalInt result = MatchingRules.nextRadius(60);
+        assertTrue(result.isEmpty());
+
+    }
+
+    @Test
+    void inBetweenValueGoesToNextStep(){
+
+        OptionalInt result = MatchingRules.nextRadius(10);
+        assertEquals(OptionalInt.of(15), result);
+
+    }
+
 
 }

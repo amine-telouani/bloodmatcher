@@ -2,6 +2,7 @@ package com.bloodmatcher.bloodmatcher.service;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.Set;
 
 public class MatchingRules {
@@ -24,5 +25,15 @@ public class MatchingRules {
         return candidates.stream()
                          .sorted(byPriority)
                          .toList();
+    }
+
+    private static final List<Integer> RADIUS_STEPS = List.of(5, 15, 30, 60);
+
+    public static OptionalInt nextRadius(int currentRadiusKm){
+
+        return RADIUS_STEPS.stream()
+                           .filter(step -> step > currentRadiusKm)
+                           .mapToInt(Integer::intValue)
+                           .findFirst();
     }
 }
