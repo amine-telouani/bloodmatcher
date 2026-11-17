@@ -31,7 +31,7 @@ Note: Spring Boot 4 starter names differ from Boot 3. The web starter is `spring
 ## 3. Get the project
 
 ```
-git clone https://github.com/atel12345/bloodmatcher.git
+git clone https://github.com/amine-telouani/bloodmatcher.git
 cd bloodmatcher
 ```
 
