@@ -1,0 +1,134 @@
+/* Donor dashboard — builds on shared bloodmatch.css and dashboard.css */
+
+.dd-blood { font-weight: 700; color: var(--bm-ink); }
+
+/* ---- availability switch ---- */
+.dd-avail { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.dd-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 16px 6px 6px;
+  border: 1.5px solid var(--bm-ink);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--bm-ink);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms var(--bm-ease);
+}
+.dd-switch:hover:not(:disabled) { background: var(--bm-blush); }
+.dd-switch:disabled { cursor: progress; }
+.dd-switch:focus-visible { outline: 2px solid var(--bm-red); outline-offset: 2px; }
+.dd-switch-track {
+  position: relative;
+  width: 40px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--bm-line);
+  transition: background-color 180ms var(--bm-ease);
+}
+.dd-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(38, 34, 34, 0.25);
+  transition: transform 180ms var(--bm-ease);
+}
+.dd-switch[aria-checked='true'] .dd-switch-track { background: var(--bm-red); }
+.dd-switch[aria-checked='true'] .dd-switch-thumb { transform: translateX(16px); }
+.dd-avail-error { margin: 4px 0 0; }
+
+.dd-paused {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1.5px dashed var(--bm-line);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--bm-muted);
+}
+
+/* ---- detail ---- */
+.dd-where {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0 0;
+}
+.dd-where div { min-width: 0; }
+.dd-where dt { font-size: 12px; font-weight: 700; color: var(--bm-muted); }
+.dd-where dd { margin: 2px 0 0; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+
+.dd-error { margin: 16px 0 0; }
+
+.dd-answer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin-top: 18px;
+}
+.dd-answer .bm-button { margin-top: 0; }
+.dd-answer .bm-ghost,
+.dd-links .bm-ghost {
+  justify-content: center;
+  padding: 11px 20px;
+  font-size: 14px;
+  color: var(--bm-ink);
+  text-decoration: none;
+}
+
+.dd-ineligible {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bm-cream);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dd-closed { margin: 18px 0 0; font-size: 14px; line-height: 1.5; color: var(--bm-muted); }
+.dd-answer .dd-closed { margin: 0; }
+
+.dd-going {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--bm-line);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.dd-going p { margin: 0; }
+.dd-going-title { font-weight: 700; font-size: 16px; }
+.dd-links { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin-top: 6px; }
+.dd-links .hd-call { font-size: 14px; }
+.dd-withdraw { margin-top: 4px; padding-left: 0; }
+.dd-going .hd-confirm { margin-top: 4px; }
+
+@media (min-width: 560px) {
+  .dd-answer { flex-direction: row; flex-wrap: wrap; align-items: center; }
+  .dd-answer .bm-button { width: auto; flex: 1 1 180px; }
+  .dd-answer .bm-ghost { flex: 1 1 160px; }
+  .dd-answer .dd-ineligible,
+  .dd-answer .dd-closed { flex-basis: 100%; }
+}
+
+@media (min-width: 768px) {
+  .dd-avail { align-items: flex-end; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dd-switch, .dd-switch-track, .dd-switch-thumb { transition: none; }
+}

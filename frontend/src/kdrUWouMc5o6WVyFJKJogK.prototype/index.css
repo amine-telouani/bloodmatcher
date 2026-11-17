@@ -1,0 +1,6 @@
+/* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE, ABOVE THE TAILWIND IMPORT — DO NOT DELETE THIS COMMENT */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Plus+Jakarta+Sans:wght@800&family=DM+Sans:wght@400;500;600;700&family=Fredoka:wght@500;600;700&display=swap');
+
+/* CRITICAL: THE FOLLOWING TAILWIND IMPORT MUST NEVER BE DELETED — DO NOT DELETE THIS COMMENT */
+@import 'tailwindcss';
+/* END TAILWIND IMPORTS — ALL OTHER CSS MUST GO BELOW THIS LINE */
