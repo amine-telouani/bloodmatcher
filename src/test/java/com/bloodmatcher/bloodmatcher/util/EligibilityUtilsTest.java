@@ -24,7 +24,7 @@ class EligibilityUtilsTest {
 
         LocalDate lastDonation = TODAY.minusDays(COOLDOWN_DAYS - 1);
         boolean result = EligibilityUtils.isPastCooldown(lastDonation, COOLDOWN_DAYS, TODAY);
-        assertTrue(result);
+        assertFalse(result);
 
     }
 

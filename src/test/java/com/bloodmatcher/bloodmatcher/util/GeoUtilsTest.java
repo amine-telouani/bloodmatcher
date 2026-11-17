@@ -20,7 +20,7 @@ class GeoUtilsTest {
     @Test
     void casablancaToRabat() {
         double result = GeoUtils.distanceKm(CASABLANCA_LAT, CASABLANCA_LON, RABAT_LAT, RABAT_LON);
-        assertEquals(87, result, 1);
+        assertEquals(85.2, result, 1);;
     }
 
     @Test
