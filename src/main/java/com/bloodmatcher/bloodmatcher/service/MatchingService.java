@@ -2,7 +2,9 @@ package com.bloodmatcher.bloodmatcher.service;
 
 import com.bloodmatcher.bloodmatcher.entity.BloodRequest;
 import com.bloodmatcher.bloodmatcher.entity.Donor;
+import com.bloodmatcher.bloodmatcher.entity.DonorResponse;
 import com.bloodmatcher.bloodmatcher.enums.BloodType;
+import com.bloodmatcher.bloodmatcher.enums.ResponseStatus;
 import com.bloodmatcher.bloodmatcher.repository.DonorRepository;
 import com.bloodmatcher.bloodmatcher.repository.DonorResponseRepository;
 import com.bloodmatcher.bloodmatcher.util.EligibilityUtils;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -69,5 +72,22 @@ public class MatchingService {
                 .limit(limit)
                 .map(c -> donorsById.get(c.donorId()))
                 .toList();
+    }
+
+    @Transactional
+    public List<DonorResponse> notifyDonors(BloodRequest request) {
+        LocalDateTime now = LocalDateTime.now();
+        List<DonorResponse> responses = selectDonorsToNotify(request).stream()
+                .map(donor -> {
+                    DonorResponse response = new DonorResponse();
+                    response.setRequest(request);
+                    response.setDonor(donor);
+                    response.setStatus(ResponseStatus.NOTIFIED);
+                    response.setNotifiedAt(now);
+                    return response;
+                })
+                .toList();
+
+        return donorResponseRepository.saveAll(responses);
     }
 }
