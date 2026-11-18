@@ -13,10 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +43,22 @@ public class MatchingService {
                 .filter(d -> GeoUtils.distanceKm(hospitalLat, hospitalLon,
                         d.getLatitude(), d.getLongitude()) <= request.getCurrentRadiusKm())
                 .filter(d -> !alreadyNotified.contains(d.getId()))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Donor> selectDonorsToNotify(BloodRequest request) {
+        double hospitalLat = request.getHospital().getLatitude();
+        double hospitalLon = request.getHospital().getLongitude();
+        BloodType needed = request.getBloodType();
+        int limit = 3 * request.getUnitsNeeded();
+
+        return findEligibleNearby(request).stream()
+                .sorted(Comparator
+                        .comparing((Donor d) -> d.getBloodType() != needed)
+                        .thenComparingDouble(d -> GeoUtils.distanceKm(hospitalLat, hospitalLon,
+                                d.getLatitude(), d.getLongitude())))
+                .limit(limit)
                 .toList();
     }
 }
