@@ -79,5 +79,19 @@ public class RequestService {
         return request;
     }
 
+    @Transactional
+    public BloodRequest cancelRequest(Long id, String email) {
+
+        BloodRequest request = getRequestForUser(id, email);
+
+        if (request.getStatus() != RequestStatus.OPEN) {
+            throw new IllegalStateException("Only open requests can be cancelled");
+        }
+
+        request.setStatus(RequestStatus.CANCELLED);
+        return request;
+
+    }
+
 
 }
