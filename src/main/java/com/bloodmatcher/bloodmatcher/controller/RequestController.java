@@ -38,4 +38,13 @@ public class RequestController {
 
     }
 
+    @PostMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('HOSPITAL')")
+    public ResponseEntity<RequestResponse> cancel(@PathVariable Long id, Authentication authentication) {
+
+        BloodRequest cancelled = requestService.cancelRequest(id, authentication.getName());
+        return ResponseEntity.ok(RequestResponse.from(cancelled));
+
+    }
+
 }
