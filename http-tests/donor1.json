@@ -1,0 +1,9 @@
+{
+  "email": "donor1@test.com",
+  "password": "password123",
+  "fullName": "Test Donor",
+  "phone": "0600000000",
+  "bloodType": "A_NEG",
+  "latitude": 33.57,
+  "longitude": -7.59
+}
