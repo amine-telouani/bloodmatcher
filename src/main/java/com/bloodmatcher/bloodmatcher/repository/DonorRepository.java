@@ -8,10 +8,13 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface DonorRepository extends JpaRepository<Donor, Long> {
 
     @Query("SELECT d FROM Donor d WHERE d.bloodType IN :types AND d.available = true")
     List<Donor> findCandidates(@Param("types")Collection<BloodType> types);
+
+    Optional<Donor> findByUserEmail(String email);
 
 }
