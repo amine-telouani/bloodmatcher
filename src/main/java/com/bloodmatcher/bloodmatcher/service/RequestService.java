@@ -9,6 +9,7 @@ import com.bloodmatcher.bloodmatcher.enums.RequestStatus;
 import com.bloodmatcher.bloodmatcher.enums.Urgency;
 import com.bloodmatcher.bloodmatcher.repository.BloodRequestRepository;
 import com.bloodmatcher.bloodmatcher.repository.HospitalRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.access.AccessDeniedException;
@@ -64,6 +65,18 @@ public class RequestService {
 
         return createRequest(hospital, dto.getBloodType(), dto.getUnitsNeeded(), dto.getUrgency());
 
+    }
+
+    @Transactional(readOnly = true)
+    public BloodRequest getRequestForUser(Long id, String email) {
+        BloodRequest request = bloodRequestRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Request not found"));
+
+       if (!request.getHospital().getUser().getEmail().equals(email)) {
+           throw new AccessDeniedException("Not your request");
+       }
+
+        return request;
     }
 
 
