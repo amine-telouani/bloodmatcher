@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,12 +54,20 @@ public class MatchingService {
         BloodType needed = request.getBloodType();
         int limit = 3 * request.getUnitsNeeded();
 
-        return findEligibleNearby(request).stream()
-                .sorted(Comparator
-                        .comparing((Donor d) -> d.getBloodType() != needed)
-                        .thenComparingDouble(d -> GeoUtils.distanceKm(hospitalLat, hospitalLon,
-                                d.getLatitude(), d.getLongitude())))
+        List<Donor> eligible = findEligibleNearby(request);
+        Map<Long, Donor> donorsById = eligible.stream()
+                .collect(Collectors.toMap(Donor::getId, d -> d));
+
+        List<RankedCandidate> candidates = eligible.stream()
+                .map(d -> new RankedCandidate(
+                        d.getId(),
+                        d.getBloodType() == needed,
+                        GeoUtils.distanceKm(hospitalLat, hospitalLon, d.getLatitude(), d.getLongitude())))
+                .toList();
+
+        return MatchingRules.rank(candidates).stream()
                 .limit(limit)
+                .map(c -> donorsById.get(c.donorId()))
                 .toList();
     }
 }
