@@ -92,6 +92,12 @@ export function readFieldErrors(body: any): Record<string, string> {
     for (const item of src) if (item?.field) out[item.field] = item.message ?? item.defaultMessage ?? 'Check this field.'
   } else if (src && typeof src === 'object') {
     for (const [k, msg] of Object.entries(src)) out[k] = String(msg)
+  } else if (body && typeof body === 'object') {
+    for (const [k, msg] of Object.entries(body)) {
+      if (k !== 'error' && k !== 'message') {
+        out[k] = typeof msg === 'string' ? msg : 'Check this field.'
+      }
+    }
   }
   return out
 }

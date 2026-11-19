@@ -25,6 +25,13 @@ public class DonorController {
 
     private final DonorService donorService;
 
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('DONOR')")
+    public ResponseEntity<DonorProfileResponse> getProfile(Authentication authentication) {
+        Donor donor = donorService.getProfile(authentication.getName());
+        return ResponseEntity.ok(DonorProfileResponse.from(donor));
+    }
+
     @PutMapping("/me")
     @PreAuthorize("hasRole('DONOR')")
     public ResponseEntity<DonorProfileResponse> updateMe(
