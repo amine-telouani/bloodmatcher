@@ -1,15 +1,14 @@
-
 import { apiFetch, ApiError, ENDPOINTS } from './api'
 import { CAN_RECEIVE_FROM, distanceKm, type BloodType, type RequestStatus, type Urgency } from './blood'
-import type { Session } from './session'
+import { readSession, type Session } from './session'
 
 export type HospitalProfile = {
   id: string
   name: string
-  city: string
+  city?: string
   email: string
-  latitude: number
-  longitude: number
+  latitude?: number
+  longitude?: number
 }
 
 export type BloodRequest = {
@@ -22,11 +21,14 @@ export type BloodRequest = {
   createdAt: string
   matchedCount: number
   acceptedCount: number
+  deadline?: string
+  currentRadiusKm?: number
 }
 
 export type DonorResponse = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'DONATED'
 
 export type DonorMatch = {
+  /** With the real backend this carries the responseId. */
   donorId: string
   fullName: string
   bloodType: BloodType
@@ -39,15 +41,110 @@ export type NewRequest = { bloodType: BloodType; units: number; urgency: Urgency
 
 /* ---------- real API ---------- */
 
+type BackendRequest = {
+  id: number
+  bloodType: BloodType
+  unitsNeeded: number
+  urgency: Urgency
+  status: RequestStatus
+  createdAt: string
+  deadline?: string
+  currentRadiusKm?: number
+}
+
+// MOCK: no backend endpoint for "my requests", so ids of requests created in this browser are remembered
+const idsKey = () => `bm:hospitalRequests:${readSession()?.email ?? ''}`
+
+function readIds(): string[] {
+  try {
+    const v = JSON.parse(localStorage.getItem(idsKey()) ?? '[]')
+    return Array.isArray(v) ? v.map(String) : []
+  } catch {
+    return []
+  }
+}
+
+function saveId(id: string) {
+  try {
+    const ids = readIds().filter((x) => x !== id)
+    ids.unshift(id)
+    localStorage.setItem(idsKey(), JSON.stringify(ids.slice(0, 50)))
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+function fromBackend(r: BackendRequest): BloodRequest {
+  return {
+    id: String(r.id),
+    bloodType: r.bloodType,
+    units: r.unitsNeeded,
+    urgency: r.urgency,
+    status: r.status,
+    notes: '', // backend has no notes field
+    createdAt: r.createdAt,
+    matchedCount: 0, // MOCK: no backend endpoint for matched donors
+    acceptedCount: 0,
+    ...(r.deadline ? { deadline: r.deadline } : {}),
+    ...(r.currentRadiusKm != null ? { currentRadiusKm: r.currentRadiusKm } : {}),
+  }
+}
+
+async function getRequest(id: string): Promise<BloodRequest> {
+  return fromBackend(await apiFetch<BackendRequest>(ENDPOINTS.requestById(id)))
+}
+
 export const hospitalApi = {
-  profile: () => apiFetch<HospitalProfile>(ENDPOINTS.hospitalProfile),
-  requests: () => apiFetch<BloodRequest[]>(ENDPOINTS.hospitalRequests),
-  create: (r: NewRequest) => apiFetch<BloodRequest>(ENDPOINTS.hospitalRequests, { method: 'POST', body: r }),
-  matches: (id: string) => apiFetch<DonorMatch[]>(ENDPOINTS.requestMatches(id)),
-  setStatus: (id: string, status: RequestStatus) =>
-    apiFetch<BloodRequest>(ENDPOINTS.requestStatus(id), { method: 'PATCH', body: { status } }),
-  markDonated: (id: string, donorId: string) =>
-    apiFetch<BloodRequest>(ENDPOINTS.requestDonations(id), { method: 'POST', body: { donorId } }),
+  // MOCK: no backend endpoint for the hospital profile; built from the session
+  profile: async (): Promise<HospitalProfile> => {
+    const s = readSession()
+    const email = s?.email ?? ''
+    return { id: '', name: s?.user?.name || email, email }
+  },
+
+  requests: async (): Promise<BloodRequest[]> => {
+    const out: BloodRequest[] = []
+    for (const id of readIds()) {
+      try {
+        out.push(await getRequest(id))
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) throw err
+      }
+    }
+    return out.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  },
+
+  create: async (r: NewRequest): Promise<BloodRequest> => {
+    try {
+      const res = await apiFetch<BackendRequest>(ENDPOINTS.requestCreate, {
+        method: 'POST',
+        body: { bloodType: r.bloodType, unitsNeeded: r.units, urgency: r.urgency },
+      })
+      saveId(String(res.id))
+      return fromBackend(res)
+    } catch (err) {
+      if (err instanceof ApiError && err.fieldErrors['unitsNeeded']) {
+        throw new ApiError(err.status, err.message, { ...err.fieldErrors, units: err.fieldErrors['unitsNeeded'] })
+      }
+      throw err
+    }
+  },
+
+  // MOCK: no backend endpoint for matched donors
+  matches: async (_id: string): Promise<DonorMatch[]> => [],
+
+  setStatus: async (id: string, status: RequestStatus): Promise<BloodRequest> => {
+    // MOCK: no backend endpoint to mark a request fulfilled
+    if (status !== 'CANCELLED') throw new ApiError(400, 'Marking a request as fulfilled isn’t available yet.')
+    await apiFetch<unknown>(ENDPOINTS.requestCancel(id), { method: 'POST' })
+    return getRequest(id)
+  },
+
+  /** donorId here is the responseId of the donor's accepted response. */
+  markDonated: async (id: string, donorId: string): Promise<BloodRequest> => {
+    await apiFetch<unknown>(ENDPOINTS.responseDonated(donorId), { method: 'POST' })
+    return getRequest(id)
+  },
 }
 
 /* ---------- preview stand-in ---------- */
@@ -105,16 +202,16 @@ function matchesFor(req: BloodRequest): DonorMatch[] {
   const p = store!.profile
   const ok = CAN_RECEIVE_FROM[req.bloodType]
   return DONORS.filter((d) => ok.includes(d.bloodType))
-    .map((d) => ({
-      donorId: d.id,
-      fullName: d.fullName,
-      bloodType: d.bloodType,
-      phone: d.phone,
-      distanceKm: Math.round(distanceKm(p.latitude, p.longitude, d.lat, d.lng) * 10) / 10,
-      response: responses[req.id]?.[d.id] ?? ('PENDING' as DonorResponse),
-    }))
-    .filter((m) => m.distanceKm <= 25)
-    .sort((a, b) => rank(a.response) - rank(b.response) || a.distanceKm - b.distanceKm)
+      .map((d) => ({
+        donorId: d.id,
+        fullName: d.fullName,
+        bloodType: d.bloodType,
+        phone: d.phone,
+        distanceKm: Math.round(distanceKm(p.latitude ?? 0, p.longitude ?? 0, d.lat, d.lng) * 10) / 10,
+        response: responses[req.id]?.[d.id] ?? ('PENDING' as DonorResponse),
+      }))
+      .filter((m) => m.distanceKm <= 25)
+      .sort((a, b) => rank(a.response) - rank(b.response) || a.distanceKm - b.distanceKm)
 }
 
 const rank = (r: DonorResponse) => (r === 'ACCEPTED' ? 0 : r === 'PENDING' ? 1 : 2)
@@ -173,4 +270,3 @@ export function mockHospitalApi(session: Session | null): typeof hospitalApi {
     },
   }
 }
-
