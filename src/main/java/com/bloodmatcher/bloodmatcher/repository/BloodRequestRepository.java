@@ -19,4 +19,6 @@ public interface BloodRequestRepository extends JpaRepository<BloodRequest, Long
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM BloodRequest r WHERE r.id = :id")
     Optional<BloodRequest> findByIdForUpdate(@Param("id") Long id);
+    long countByStatus(RequestStatus status);
+
 }
