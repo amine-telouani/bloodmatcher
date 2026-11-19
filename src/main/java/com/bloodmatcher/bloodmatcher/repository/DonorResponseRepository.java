@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.bloodmatcher.bloodmatcher.enums.ResponseStatus;
 import java.util.List;
+import java.util.Collection;
 
 public interface DonorResponseRepository extends JpaRepository<DonorResponse, Long> {
 
@@ -14,5 +15,9 @@ public interface DonorResponseRepository extends JpaRepository<DonorResponse, Lo
     List<Long> findDonorIdsByRequestId(@Param("requestId") Long requestId);
 
     List<DonorResponse> findByDonorUserEmailAndStatus(String email, ResponseStatus status);
+
+    List<DonorResponse> findByRequestIdAndStatus(Long requestId, ResponseStatus status);
+
+    long countByRequestIdAndStatusIn(Long requestId, Collection<ResponseStatus> statuses);
 
 }
