@@ -26,6 +26,11 @@ public class DonorService {
                 .orElseThrow(() -> new EntityNotFoundException("Donor not found"));
     }
 
+    @Transactional(readOnly = true)
+    public Donor getProfile(String email) {
+        return getDonorForUser(email);
+    }
+
     @Transactional
     public Donor updateDonor(String email, UpdateDonorRequest request) {
         Donor donor = getDonorForUser(email);

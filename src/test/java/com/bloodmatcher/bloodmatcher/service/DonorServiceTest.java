@@ -63,6 +63,30 @@ class DonorServiceTest {
     }
 
     @Test
+    void getProfileReturnsKnownDonor() {
+        Donor donor = new Donor();
+        donor.setFullName("Known Donor");
+        when(donorRepository.findByUserEmail("donor@test.com"))
+                .thenReturn(Optional.of(donor));
+
+        Donor profile = donorService.getProfile("donor@test.com");
+
+        assertEquals("Known Donor", profile.getFullName());
+        verify(donorRepository).findByUserEmail("donor@test.com");
+    }
+
+    @Test
+    void getProfileThrowsForUnknownDonor() {
+        when(donorRepository.findByUserEmail("unknown@test.com"))
+                .thenReturn(Optional.empty());
+
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class,
+                () -> donorService.getProfile("unknown@test.com"));
+
+        assertEquals("Donor not found", exception.getMessage());
+    }
+
+    @Test
     void getsOnlyNotifiedAlertsForDonor() {
         Donor donor = new Donor();
         DonorResponse response = new DonorResponse();

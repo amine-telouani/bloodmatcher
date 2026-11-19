@@ -10,8 +10,6 @@ import java.time.LocalDate;
 @Getter
 @AllArgsConstructor
 public class DonorProfileResponse {
-
-    private Long id;
     private String fullName;
     private BloodType bloodType;
     private double latitude;
@@ -22,7 +20,6 @@ public class DonorProfileResponse {
 
     public static DonorProfileResponse from(Donor donor) {
         return new DonorProfileResponse(
-                donor.getId(),
                 donor.getFullName(),
                 donor.getBloodType(),
                 donor.getLatitude(),
