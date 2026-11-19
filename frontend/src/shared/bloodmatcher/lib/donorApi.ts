@@ -1,8 +1,7 @@
-
 import { apiFetch, ApiError, ENDPOINTS } from './api'
 import { CAN_RECEIVE_FROM, distanceKm, type BloodType, type RequestStatus, type Urgency } from './blood'
 import type { DonorResponse } from './hospitalApi'
-import type { Session } from './session'
+import { readSession, type Session } from './session'
 
 export type DonorProfile = {
   id: string
@@ -21,18 +20,20 @@ export type DonorProfile = {
 /** A hospital request this donor was matched to, with how they answered. */
 export type DonorAlert = {
   requestId: string
+  responseId?: number
   hospitalName: string
   hospitalCity: string
-  hospitalPhone: string
-  hospitalLatitude: number
-  hospitalLongitude: number
-  distanceKm: number
+  hospitalPhone?: string
+  hospitalLatitude?: number
+  hospitalLongitude?: number
+  distanceKm?: number
   bloodType: BloodType
   units: number
   urgency: Urgency
   status: RequestStatus
-  notes: string
-  createdAt: string
+  notes?: string
+  createdAt?: string
+  deadline?: string
   response: DonorResponse
 }
 
@@ -47,15 +48,108 @@ export function nextEligibleDate(lastDonationAt: string | null): Date | null {
 
 /* ---------- real API ---------- */
 
+type BackendAlert = {
+  responseId: number
+  requestId: number
+  bloodType: BloodType
+  unitsNeeded: number
+  urgency: Urgency
+  hospitalName: string
+  hospitalCity: string
+  deadline: string
+}
+
+type BackendProfile = {
+  fullName: string
+  bloodType: BloodType
+  latitude: number
+  longitude: number
+  available: boolean
+  phone: string
+  lastDonationDate: string | null
+}
+
+// requestId (UI key) -> alert, so respond() can find the responseId the backend needs
+const alertCache = new Map<string, DonorAlert>()
+let lastProfile: DonorProfile | null = null
+
+function fromBackendProfile(p: BackendProfile): DonorProfile {
+  return {
+    id: '',
+    fullName: p.fullName,
+    email: readSession()?.email ?? '',
+    phone: p.phone,
+    bloodType: p.bloodType,
+    city: '', // MOCK: backend has no donor city
+    latitude: p.latitude,
+    longitude: p.longitude,
+    available: p.available,
+    lastDonationAt: p.lastDonationDate,
+  }
+}
+
+function fromBackendAlert(a: BackendAlert): DonorAlert {
+  return {
+    requestId: String(a.requestId),
+    responseId: a.responseId,
+    hospitalName: a.hospitalName,
+    hospitalCity: a.hospitalCity,
+    bloodType: a.bloodType,
+    units: a.unitsNeeded,
+    urgency: a.urgency,
+    status: 'OPEN',
+    deadline: a.deadline,
+    response: 'PENDING',
+  }
+}
+
+async function getProfile(): Promise<DonorProfile> {
+  lastProfile = fromBackendProfile(await apiFetch<BackendProfile>(ENDPOINTS.donorProfile))
+  return lastProfile
+}
+
+/** PUT needs all four fields: latitude, longitude, available, phone. */
+async function putProfile(p: { latitude: number; longitude: number; available: boolean; phone: string }) {
+  await apiFetch<unknown>(ENDPOINTS.donorProfile, {
+    method: 'PUT',
+    body: { latitude: p.latitude, longitude: p.longitude, available: p.available, phone: p.phone },
+  })
+  return getProfile()
+}
+
 export const donorApi = {
-  profile: () => apiFetch<DonorProfile>(ENDPOINTS.donorProfile),
-  alerts: () => apiFetch<DonorAlert[]>(ENDPOINTS.donorAlerts),
-  setAvailable: (available: boolean) =>
-    apiFetch<DonorProfile>(ENDPOINTS.donorAvailability, { method: 'PATCH', body: { available } }),
-  respond: (requestId: string, response: Exclude<DonorResponse, 'PENDING'>) =>
-    apiFetch<DonorAlert>(ENDPOINTS.requestResponse(requestId), { method: 'POST', body: { response } }),
-  updateProfile: (patch: { fullName: string; phone: string; latitude: number; longitude: number }) =>
-    apiFetch<DonorProfile>(ENDPOINTS.donorProfile, { method: 'PATCH', body: patch }),
+  profile: () => getProfile(),
+
+  alerts: async () => {
+    const list = await apiFetch<BackendAlert[]>(ENDPOINTS.donorAlerts)
+    const alerts = (list ?? []).map(fromBackendAlert)
+    for (const a of alerts) alertCache.set(a.requestId, a)
+    return alerts
+  },
+
+  setAvailable: async (available: boolean) => {
+    const cur = lastProfile ?? (await getProfile())
+    return putProfile({ latitude: cur.latitude, longitude: cur.longitude, phone: cur.phone, available })
+  },
+
+  respond: async (requestId: string, response: Exclude<DonorResponse, 'PENDING'>) => {
+    const cached = alertCache.get(requestId)
+    if (!cached || cached.responseId === undefined) {
+      throw new ApiError(404, 'This request is no longer in your list. Please refresh the page.')
+    }
+    const path =
+        response === 'ACCEPTED' ? ENDPOINTS.responseAccept(cached.responseId) : ENDPOINTS.responseDecline(cached.responseId)
+    await apiFetch<unknown>(path, { method: 'POST' })
+    const updated: DonorAlert = { ...cached, response }
+    alertCache.set(requestId, updated)
+    return updated
+  },
+
+  // fullName and bloodType are not editable through the API: only phone/latitude/longitude are sent
+  updateProfile: async (patch: { fullName: string; phone: string; latitude: number; longitude: number }) => {
+    const cur = lastProfile ?? (await getProfile())
+    return putProfile({ latitude: patch.latitude, longitude: patch.longitude, phone: patch.phone, available: cur.available })
+  },
 }
 
 /* ---------- preview stand-in ---------- */
@@ -154,4 +248,3 @@ export function mockDonorApi(session: Session | null): typeof donorApi {
     },
   }
 }
-

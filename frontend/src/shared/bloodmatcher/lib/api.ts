@@ -1,29 +1,34 @@
-
 import { clearSession, readCredentials } from './session'
 
-/**
- * Where the Spring Boot backend lives. All endpoints start with /api.
- */
+/** Relative /api paths only: Vercel rewrites them to the backend. */
 export const API_BASE = ''
 
 /** Every backend route the app calls, in one place. */
 export const ENDPOINTS = {
+  // --- real backend endpoints ---
   login: '/api/auth/login',
   register: '/api/auth/register',
-  /**
-   * Password recovery. NOT YET CONFIRMED in the Spring backend — these are the
-   * paths the frontend is ready for. If the backend uses different ones, change
-   * them here; a 404/405/501 is shown to the user as "not available yet".
-   */
+  donorProfile: '/api/donors/me', // GET and PUT
+  donorAlerts: '/api/donors/me/alerts', // GET
+  responseAccept: (id: string | number) => `/api/responses/${id}/accept`,
+  responseDecline: (id: string | number) => `/api/responses/${id}/decline`,
+  responseDonated: (id: string | number) => `/api/responses/${id}/donated`,
+  requestCreate: '/api/requests', // POST
+  requestById: (id: string | number) => `/api/requests/${id}`, // GET
+  requestCancel: (id: string | number) => `/api/requests/${id}/cancel`, // POST
+  adminVerify: (id: string | number) => `/api/admin/hospitals/${id}/verify`, // PUT
+  adminStats: '/api/admin/stats', // GET
+
+  // --- MOCK: no backend endpoint (password recovery) ---
   forgotPassword: '/api/auth/forgot-password',
   resetPassword: '/api/auth/reset-password',
+
+  // --- OLD invented endpoints: delete once the pages using them are rewritten ---
   hospitalProfile: '/api/hospitals/me',
   hospitalRequests: '/api/hospitals/me/requests',
   requestMatches: (id: string) => `/api/requests/${id}/matches`,
   requestStatus: (id: string) => `/api/requests/${id}/status`,
-  donorProfile: '/api/donors/me',
   donorAvailability: '/api/donors/me/availability',
-  donorAlerts: '/api/donors/me/requests',
   requestResponse: (id: string) => `/api/requests/${id}/response`,
   requestDonations: (id: string) => `/api/requests/${id}/donations`,
 }
@@ -43,7 +48,7 @@ export class ApiError extends Error {
   }
 }
 
-/** HTTP Basic header value for the given credentials, UTF-8 safe (btoa alone chokes on non-Latin1). */
+/** HTTP Basic header value, UTF-8 safe. */
 export function basicAuth(email: string, password: string) {
   const bytes = new TextEncoder().encode(`${email}:${password}`)
   let binary = ''
@@ -51,7 +56,7 @@ export function basicAuth(email: string, password: string) {
   return `Basic ${btoa(binary)}`
 }
 
-/** Authenticated JSON request using HTTP Basic credentials from sessionStorage. A 401 clears the stored session. */
+/** Authenticated JSON request. 401 clears the session. Never crashes on an empty body. */
 export async function apiFetch<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
   const creds = readCredentials()
   let res: Response
@@ -73,18 +78,18 @@ export async function apiFetch<T>(path: string, init: { method?: string; body?: 
     clearSession()
     throw new ApiError(401, 'Your session has ended. Please sign in again.')
   }
-  if (res.status === 403) throw new ApiError(403, 'Your account can’t access this.')
   if (!res.ok) {
-    throw new ApiError(
-      res.status,
-      body?.message ?? 'Something went wrong on our side. Please try again in a moment.',
-      readFieldErrors(body)
-    )
+    const serverMsg = typeof body?.error === 'string' ? body.error : typeof body?.message === 'string' ? body.message : ''
+    const fallback =
+        res.status === 403
+            ? 'Your account can’t access this.'
+            : 'Something went wrong on our side. Please try again in a moment.'
+    throw new ApiError(res.status, serverMsg || fallback, res.status === 400 ? readFieldErrors(body) : {})
   }
   return body as T
 }
 
-/** Reads Spring validation errors: `{ errors: { field: msg } }` or `{ fieldErrors|errors: [{ field, message }] }`. */
+/** Validation 400 = flat map {field: message}. Also accepts the array shapes. */
 export function readFieldErrors(body: any): Record<string, string> {
   const out: Record<string, string> = {}
   const src = body?.fieldErrors ?? body?.errors
@@ -94,11 +99,8 @@ export function readFieldErrors(body: any): Record<string, string> {
     for (const [k, msg] of Object.entries(src)) out[k] = String(msg)
   } else if (body && typeof body === 'object') {
     for (const [k, msg] of Object.entries(body)) {
-      if (k !== 'error' && k !== 'message') {
-        out[k] = typeof msg === 'string' ? msg : 'Check this field.'
-      }
+      if (k !== 'error' && k !== 'message') out[k] = typeof msg === 'string' ? msg : 'Check this field.'
     }
   }
   return out
 }
-

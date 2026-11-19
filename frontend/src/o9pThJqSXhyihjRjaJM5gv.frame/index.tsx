@@ -1,17 +1,11 @@
-
 import { NavProvider } from '../shared/bloodmatcher/nav'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from '../shared/bloodmatcher/nav'
 
 import { AlertDetail } from '../shared/bloodmatcher/components/donor/AlertDetail'
 import { BmNav } from '../shared/bloodmatcher/components/BmNav'
-import { ApiError } from '../shared/bloodmatcher/lib/api'
-import { mockDonorApi, type DonorAlert } from '../shared/bloodmatcher/lib/donorApi'
-import type { DonorResponse } from '../shared/bloodmatcher/lib/hospitalApi'
-import type { Session } from '../shared/bloodmatcher/lib/session'
+import { donorApi, type DonorAlert } from '../shared/bloodmatcher/lib/donorApi'
 
-
-/* ---------- mock data (design mode — no backend calls) ---------- */
 
 type Variant = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'DONATED'
 
@@ -22,55 +16,38 @@ const VARIANTS: { id: Variant; label: string }[] = [
   { id: 'DONATED', label: 'Donated' },
 ]
 
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
-
 /* ---------- component ---------- */
 
 function DonorAlertPagePage() {
   const navigate = useNavigate()
   const { id } = useParams()
 
-  // The alert the detail card shows, seeded from the shared mock store.
   const [alert, setAlert] = useState<DonorAlert | null>(null)
   const [variant, setVariant] = useState<Variant>('PENDING')
 
   const alertRef = useRef<DonorAlert | null>(alert)
   alertRef.current = alert
 
-  // Seed from the mock store: the requested alert, or the first open one.
+  // Load the real alerts: the requested one, or the first open one.
   useEffect(() => {
     let cancelled = false
-    mockDonorApi(null).alerts().then((list) => {
-      if (cancelled) return
-      const seed = list.find((a) => a.requestId === id) ?? list.find((a) => a.status === 'OPEN') ?? list[0]
-      if (seed && !alertRef.current) {
-        const copy = { ...seed }
-        alertRef.current = copy
-        setAlert(copy)
-        setVariant(copy.response)
-      }
-    })
+    donorApi
+        .alerts()
+        .then((list) => {
+          if (cancelled) return
+          const seed = list.find((a) => a.requestId === id) ?? list.find((a) => a.status === 'OPEN') ?? list[0]
+          if (seed && !alertRef.current) {
+            const copy = { ...seed }
+            alertRef.current = copy
+            setAlert(copy)
+            setVariant(copy.response)
+          }
+        })
+        .catch(() => {})
     return () => { cancelled = true }
   }, [id])
 
-  // Mock API stand-in: same shape as the real donorApi, so AlertDetail works unchanged.
-  const api = useMemo(() => {
-    const mock = mockDonorApi(null)
-    return {
-      profile: mock.profile,
-      alerts: mock.alerts,
-      setAvailable: mock.setAvailable,
-      updateProfile: mock.updateProfile,
-      respond: async (_requestId: string, response: Exclude<DonorResponse, 'PENDING'>) => {
-        await wait(700)
-        const current = alertRef.current
-        if (!current) throw new ApiError(404, 'This request no longer exists.')
-        const updated = { ...current, response }
-        alertRef.current = updated
-        return updated
-      },
-    }
-  }, [])
+  const api = donorApi
 
   function resetTo(v: Variant) {
     setVariant(v)
@@ -83,70 +60,70 @@ function DonorAlertPagePage() {
 
   if (!alert) {
     return (
-      <div className="bm-page">
-        <div className="bm-panel">
-          <BmNav active="/donor" onNavigate={navigate} onSignOut={() => navigate('/login')} />
-          <main className="hd-main da-main">
-            <p className="hd-empty">
-              <span className="hd-empty-title">No alert found</span>
-              <p>This alert is no longer in your list.</p>
-              <Link to="/donor" className="bm-ghost">Back to your dashboard</Link>
-            </p>
-          </main>
+        <div className="bm-page">
+          <div className="bm-panel">
+            <BmNav active="/donor" onNavigate={navigate} onSignOut={() => navigate('/login')} />
+            <main className="hd-main da-main">
+              <p className="hd-empty">
+                <span className="hd-empty-title">No alert found</span>
+                <p>This alert is no longer in your list.</p>
+                <Link to="/donor" className="bm-ghost">Back to your dashboard</Link>
+              </p>
+            </main>
+          </div>
         </div>
-      </div>
     )
   }
 
   return (
-    <div className="bm-page">
-      <div className="bm-panel">
-        <BmNav active="/donor" onNavigate={navigate} onSignOut={() => navigate('/login')} />
+      <div className="bm-page">
+        <div className="bm-panel">
+          <BmNav active="/donor" onNavigate={navigate} onSignOut={() => navigate('/login')} />
 
-        <main className="hd-main da-main">
-          <div className="hd-head">
-            <div className="hd-who">
-              <Link to="/donor" className="hd-back">← Back to alerts</Link>
-              <h1 className="hd-name">Alert</h1>
+          <main className="hd-main da-main">
+            <div className="hd-head">
+              <div className="hd-who">
+                <Link to="/donor" className="hd-back">← Back to alerts</Link>
+                <h1 className="hd-name">Alert</h1>
+              </div>
             </div>
-          </div>
 
-          {/* design-preview switcher between the alert's answer states */}
-          <div className="da-tabs-row">
-            <p className="da-tabs-label">Outcome preview</p>
-            <div className="hd-tabs" role="tablist" aria-label="Outcome preview">
-              {VARIANTS.map((v) => (
-                <button
-                  key={v.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={variant === v.id}
-                  className={`hd-tab ${variant === v.id ? 'is-active' : ''}`}
-                  onClick={() => resetTo(v.id)}
-                >
-                  {v.label}
-                </button>
-              ))}
+            {/* design-preview switcher between the alert's answer states */}
+            <div className="da-tabs-row">
+              <p className="da-tabs-label">Outcome preview</p>
+              <div className="hd-tabs" role="tablist" aria-label="Outcome preview">
+                {VARIANTS.map((v) => (
+                    <button
+                        key={v.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={variant === v.id}
+                        className={`hd-tab ${variant === v.id ? 'is-active' : ''}`}
+                        onClick={() => resetTo(v.id)}
+                    >
+                      {v.label}
+                    </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div className="da-card">
-            <AlertDetail
-              alert={alert}
-              api={api}
-              eligibleFrom={null}
-              flash={null}
-              onResponded={(updated) => {
-                alertRef.current = updated
-                setAlert(updated)
-                setVariant(updated.response)
-              }}
-              onAuthFailed={() => false}
-            />
-          </div>
-        </main>
+            <div className="da-card">
+              <AlertDetail
+                  alert={alert}
+                  api={api}
+                  eligibleFrom={null}
+                  flash={null}
+                  onResponded={(updated) => {
+                    alertRef.current = updated
+                    setAlert(updated)
+                    setVariant(updated.response)
+                  }}
+                  onAuthFailed={() => false}
+              />
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
   )
 }
 
@@ -158,9 +135,9 @@ type Props = Partial<typeof args> & { onNavigate?: (path: string) => void }
 export default function DonorAlertPage(props: Props) {
   const { onNavigate, ...rest } = { ...args, ...props }
   return (
-    <NavProvider onNavigate={onNavigate} params={rest as Record<string, string>}>
-      <DonorAlertPagePage />
-    </NavProvider>
+      <NavProvider onNavigate={onNavigate} params={rest as Record<string, string>}>
+        <DonorAlertPagePage />
+      </NavProvider>
   )
 }
 
