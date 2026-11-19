@@ -29,12 +29,15 @@ function Login() {
       })
 
       if (response.status === 401) {
+        sessionStorage.removeItem('auth')
         setError('Invalid email or password')
         return
       }
 
       if (!response.ok) {
-        throw new Error('Login request failed')
+        sessionStorage.removeItem('auth')
+        setError('Invalid email or password')
+        return
       }
 
       const data = await response.json()
@@ -55,7 +58,8 @@ function Login() {
       )
       window.location.assign(destination)
     } catch {
-      setError('Unable to sign in right now. Please try again.')
+      sessionStorage.removeItem('auth')
+      setError('Invalid email or password')
     } finally {
       setIsLoading(false)
     }
