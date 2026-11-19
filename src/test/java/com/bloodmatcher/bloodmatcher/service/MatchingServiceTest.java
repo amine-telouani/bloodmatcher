@@ -6,6 +6,7 @@ import com.bloodmatcher.bloodmatcher.entity.DonorResponse;
 import com.bloodmatcher.bloodmatcher.entity.Hospital;
 import com.bloodmatcher.bloodmatcher.enums.BloodType;
 import com.bloodmatcher.bloodmatcher.enums.ResponseStatus;
+import com.bloodmatcher.bloodmatcher.event.DonorsMatchedEvent;
 import com.bloodmatcher.bloodmatcher.repository.DonorRepository;
 import com.bloodmatcher.bloodmatcher.repository.DonorResponseRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +15,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
@@ -33,6 +36,9 @@ class MatchingServiceTest {
 
     @Mock
     private DonorResponseRepository donorResponseRepository;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private MatchingService matchingService;
@@ -145,6 +151,36 @@ class MatchingServiceTest {
                         && response.getStatus() == ResponseStatus.NOTIFIED
                         && response.getNotifiedAt() != null));
         verify(donorResponseRepository).saveAll(any());
+    }
+
+    @Test
+    void notifyDonorsPublishesEventWithRequestAndDonorIds() {
+        MatchingService spy = spy(matchingService);
+        Donor first = donor(1L, BloodType.A_POS, 33.5740, -7.5890);
+        Donor second = donor(2L, BloodType.O_NEG, 33.5742, -7.5892);
+
+        doReturn(List.of(first, second)).when(spy).selectDonorsToNotify(request);
+        when(donorResponseRepository.saveAll(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        spy.notifyDonors(request);
+
+        ArgumentCaptor<DonorsMatchedEvent> captor = ArgumentCaptor.forClass(DonorsMatchedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertEquals(100L, captor.getValue().getRequestId());
+        assertEquals(List.of(1L, 2L), captor.getValue().getDonorIds());
+    }
+
+    @Test
+    void notifyDonorsDoesNotPublishEventWhenNobodyIsNotified() {
+        MatchingService spy = spy(matchingService);
+        doReturn(List.of()).when(spy).selectDonorsToNotify(request);
+        when(donorResponseRepository.saveAll(any()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        spy.notifyDonors(request);
+
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     private Donor donor(Long id, BloodType bloodType, double latitude, double longitude) {
