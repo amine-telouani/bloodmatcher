@@ -9,4 +9,6 @@ public interface HospitalRepository extends JpaRepository<Hospital, Long> {
 
     Optional<Hospital> findByUserEmail(String email);
 
+    long countByVerifiedTrue();
+
 }

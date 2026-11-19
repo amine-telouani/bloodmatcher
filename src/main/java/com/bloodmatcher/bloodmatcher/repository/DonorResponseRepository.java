@@ -20,4 +20,6 @@ public interface DonorResponseRepository extends JpaRepository<DonorResponse, Lo
 
     long countByRequestIdAndStatusIn(Long requestId, Collection<ResponseStatus> statuses);
 
+    long countByStatus(ResponseStatus status);
+
 }
