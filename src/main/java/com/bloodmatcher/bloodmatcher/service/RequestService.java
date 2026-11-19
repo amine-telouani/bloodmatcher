@@ -24,6 +24,7 @@ public class RequestService {
 
     private final BloodRequestRepository bloodRequestRepository;
     private final HospitalRepository hospitalRepository;
+    private final MatchingService matchingService;
 
     private LocalDateTime computeDeadline(Urgency urgency, LocalDateTime now) {
         return switch (urgency) {
@@ -63,7 +64,9 @@ public class RequestService {
             throw new AccessDeniedException("Hospital not verified");
         }
 
-        return createRequest(hospital, dto.getBloodType(), dto.getUnitsNeeded(), dto.getUrgency());
+        BloodRequest saved = createRequest(hospital, dto.getBloodType(), dto.getUnitsNeeded(), dto.getUrgency());
+        matchingService.notifyDonors(saved);
+        return saved;
 
     }
 
