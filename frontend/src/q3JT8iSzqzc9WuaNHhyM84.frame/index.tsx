@@ -100,10 +100,9 @@ function RegisterPage() {
       return
     }
     setStatus('loading')
-    const result = await mockRegister(role, values)
+    const result = await register(role, values)
     if (result.ok) {
-      if (result.session) storeSession(result.session)
-      setSession(result.session)
+      setSession(null)
       setStatus('success')
       // Sign in prefills the new account's email on its next visit.
       try {
@@ -111,6 +110,7 @@ function RegisterPage() {
       } catch {
         /* storage unavailable — prefill is best-effort */
       }
+      navigate('/login')
       return
     }
     const fail = result as Extract<RegisterResult, { ok: false }>
@@ -486,26 +486,86 @@ type RegisterResult =
   | { ok: true; session: Session | null }
   | { ok: false; fieldErrors: Errors; message: string }
 
-/**
- * Stand-in for the API, mirroring Spring's responses:
- * an email starting with "taken" is a 409, one starting with "down" is a 500,
- * anything else registers without a token, like a backend that asks you to sign in next.
- */
-function mockRegister(_role: Role, v: Values): Promise<RegisterResult> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const email = v.email.trim().toLowerCase()
-      if (email.startsWith('taken')) {
-        resolve({ ok: false, fieldErrors: { email: 'An account with this email already exists.' }, message: '' })
-        return
-      }
-      if (email.startsWith('down')) {
-        resolve({ ok: false, fieldErrors: {}, message: 'Something went wrong on our side. Please try again in a moment.' })
-        return
-      }
-      resolve({ ok: true, session: null })
-    }, 1100)
-  })
+async function register(role: Role, v: Values): Promise<RegisterResult> {
+  let body: unknown
+
+  if (role === 'donor') {
+    body = {
+      email: v.email.trim(),
+      password: v.password,
+      fullName: v.fullName.trim(),
+      phone: v.phone.trim(),
+      bloodType: v.bloodType,
+      latitude: Number(v.latitude),
+      longitude: Number(v.longitude),
+    }
+  } else {
+    body = {
+      email: v.email.trim(),
+      password: v.password,
+      name: v.name.trim(),
+      city: v.city.trim(),
+      latitude: Number(v.latitude),
+      longitude: Number(v.longitude),
+    }
+  }
+
+  let response: Response
+  try {
+    response = await fetch(
+      role === 'donor'
+        ? '/api/auth/register/donor'
+        : '/api/auth/register/hospital',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+    )
+  } catch {
+    return {
+      ok: false,
+      fieldErrors: {},
+      message: 'Server is waking up, try again in a minute',
+    }
+  }
+
+  if (response.ok) {
+    return { ok: true, session: null }
+  }
+
+  let responseBody: any = null
+  try {
+    responseBody = await response.json()
+  } catch {
+    responseBody = null
+  }
+
+  if (response.status === 400) {
+    return {
+      ok: false,
+      fieldErrors: readFieldErrors(responseBody),
+      message: '',
+    }
+  }
+
+  if (response.status === 409) {
+    return {
+      ok: false,
+      fieldErrors: {
+        email: typeof responseBody?.error === 'string'
+          ? responseBody.error
+          : 'An account with this email already exists.',
+      },
+      message: '',
+    }
+  }
+
+  return {
+    ok: false,
+    fieldErrors: {},
+    message: 'Server is waking up, try again in a minute',
+  }
 }
 
 
