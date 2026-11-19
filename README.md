@@ -81,7 +81,7 @@ Run `BloodmatcherApplication`. You should see in the console:
 - `Tomcat started on port 8080`
 - A line with `Using generated security password: ...`
 
-Open http://localhost:8080/api/requests and log in with user `user` and the generated password. A Whitelabel 404 page after login is expected for now (no controllers yet). `/api/auth/**` is public and needs no login.
+Use `/api/auth/**` for public authentication and registration endpoints. Protected `/api/requests`, `/api/donors`, `/api/responses`, `/api/admin`, and related endpoints require HTTP Basic authentication with an enabled account.
 
 ## 8. Run the tests
 
@@ -137,10 +137,14 @@ git checkout -b feature/your-task
 
 | Partner | Branches | Status |
 |---------|----------|--------|
-| A | `feature/matching` | merged (BloodType, GeoUtils, eligibility, tests) |
-| A | `feature/security` | merged (SecurityConfig: BCrypt, filter chain, method security) |
-| A | `feature/request-endpoints` | not started |
-| B | `feature/entities` (A depends on it) | in progress |
-| B | `feature/scheduler-events`, `feature/admin-seed` | not started |
+| A | authentication | implemented (registration, login, BCrypt, Spring Security) |
+| A/B | request endpoints | implemented (create, read, cancel) |
+| A | donor endpoints | implemented (update profile, notified alerts) |
+| A | response endpoints | implemented (accept, decline, donated) |
+| A | donation and matching pipeline | implemented (eligibility, cooldown, radius, exact-match ranking, top-N notification) |
+| A/B | event publishing | implemented (DonorsMatchedEvent and after-commit notification listener) |
+| B | escalation scheduler | implemented |
+| B | admin endpoints and demo seed data | implemented |
+| A/B | tests | 95 passing |
 
 Shared names: enums in `enums` (`BloodType` constants `A_POS, A_NEG, B_POS, B_NEG, AB_POS, AB_NEG, O_POS, O_NEG`); latitude and longitude are `double`, `lastDonationDate` is `LocalDate`, `available` is `boolean`; every enum is stored with `@Enumerated(EnumType.STRING)`.
