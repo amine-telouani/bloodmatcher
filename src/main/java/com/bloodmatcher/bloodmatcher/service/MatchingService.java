@@ -5,12 +5,14 @@ import com.bloodmatcher.bloodmatcher.entity.Donor;
 import com.bloodmatcher.bloodmatcher.entity.DonorResponse;
 import com.bloodmatcher.bloodmatcher.enums.BloodType;
 import com.bloodmatcher.bloodmatcher.enums.ResponseStatus;
+import com.bloodmatcher.bloodmatcher.event.DonorsMatchedEvent;
 import com.bloodmatcher.bloodmatcher.repository.DonorRepository;
 import com.bloodmatcher.bloodmatcher.repository.DonorResponseRepository;
 import com.bloodmatcher.bloodmatcher.util.EligibilityUtils;
 import com.bloodmatcher.bloodmatcher.util.GeoUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ public class MatchingService {
 
     private final DonorRepository donorRepository;
     private final DonorResponseRepository donorResponseRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Value("${app.donation.cooldown-days}")
     private int cooldownDays;
@@ -88,6 +91,13 @@ public class MatchingService {
                 })
                 .toList();
 
-        return donorResponseRepository.saveAll(responses);
+        List<DonorResponse> saved = donorResponseRepository.saveAll(responses);
+        if (!saved.isEmpty()) {
+            List<Long> donorIds = saved.stream()
+                    .map(response -> response.getDonor().getId())
+                    .toList();
+            eventPublisher.publishEvent(new DonorsMatchedEvent(request.getId(), donorIds));
+        }
+        return saved;
     }
 }
