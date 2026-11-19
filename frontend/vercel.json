@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://bloodmatcher-d6580.containers.snapdeploy.app/api/:path*"
+      "destination": "http://84.8.223.182:8080/api/:path*"
     },
     {
       "source": "/(.*)",
