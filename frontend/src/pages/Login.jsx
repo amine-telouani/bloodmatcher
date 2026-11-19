@@ -36,7 +36,7 @@ function Login() {
 
       if (!response.ok) {
         sessionStorage.removeItem('auth')
-        setError('Invalid email or password')
+        setError('The server is waking up or unreachable. Please try again in a minute.')
         return
       }
 
@@ -59,7 +59,7 @@ function Login() {
       window.location.assign(destination)
     } catch {
       sessionStorage.removeItem('auth')
-      setError('Invalid email or password')
+      setError('The server is waking up or unreachable. Please try again in a minute.')
     } finally {
       setIsLoading(false)
     }
