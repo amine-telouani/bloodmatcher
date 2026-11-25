@@ -1,3 +1,5 @@
+import { DonationWindowCard } from '../animation/shared/components/DonationWindowCard'
+import { UrgencyBloodBag } from '../animation/shared/components/UrgencyBloodBag'
 import { NavProvider } from '../shared/bloodmatcher/nav'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -240,6 +242,7 @@ function DonorDashboardPage() {
                                             setOpenId(a.requestId)
                                           }}
                                       >
+                                        {live && <span aria-hidden="true"><UrgencyBloodBag urgency={a.urgency} size="sm" showLabel={false} /></span>}
                                         <span className={`hd-type ${live ? '' : 'is-muted'}`}>{bloodLabel(a.bloodType)}</span>
                                         <span className="hd-row-body">
                                 <span className="hd-row-top">
@@ -300,7 +303,10 @@ function DonorDashboardPage() {
                 )}
 
                 {shownLoad === 'ready' && profile && (
-                    <DonorProfileForm profile={profile} api={api} onSaved={setProfile} onAuthFailed={fail} />
+                    <div className="dd-account-grid">
+                      <DonationWindowCard lastDonationDate={profile.lastDonationAt} available={profile.available} />
+                      <DonorProfileForm profile={profile} api={api} onSaved={setProfile} onAuthFailed={fail} />
+                    </div>
                 )}
               </main>
           )}

@@ -28,14 +28,15 @@ export function BmNav({ active, onNavigate, session, onSignOut }: Props) {
   if (active === '/admin') links.push({ href: '/admin', label: 'Admin' })
   const go = (path: string) => {
     setOpen(false)
-    onNavigate?.(path)
+    if (onNavigate) onNavigate(path)
+    else window.location.assign('/?screen=' + encodeURIComponent(path))
   }
 
   return (
     <nav className="bm-nav" aria-label="Main">
       <div className="bm-nav-bar">
         <BmLink
-          href={session ? homeFor(session.role) : '/login'}
+          href="/"
           className="bm-logo"
           aria-label="Bloodmatcher home"
           onNavigate={go}

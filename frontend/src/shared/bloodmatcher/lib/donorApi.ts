@@ -1,3 +1,4 @@
+import { COOLDOWN_DAYS, dayNumberToISO, getDonationWindow } from '../../../animation/shared/lib/donationWindow'
 import { apiFetch, ApiError, ENDPOINTS } from './api'
 import { CAN_RECEIVE_FROM, distanceKm, type BloodType, type RequestStatus, type Urgency } from './blood'
 import type { DonorResponse } from './hospitalApi'
@@ -38,12 +39,13 @@ export type DonorAlert = {
 }
 
 /** Days a donor waits between whole-blood donations. */
-export const DONATION_GAP_DAYS = 90
+export const DONATION_GAP_DAYS = COOLDOWN_DAYS
 
 export function nextEligibleDate(lastDonationAt: string | null): Date | null {
-  if (!lastDonationAt) return null
-  const next = new Date(new Date(lastDonationAt).getTime() + DONATION_GAP_DAYS * 86400000)
-  return next.getTime() > Date.now() ? next : null
+  const window = getDonationWindow(lastDonationAt)
+  if (window.status !== 'waiting') return null
+  const [year, month, day] = dayNumberToISO(window.nextDay).split('-').map(Number)
+  return new Date(year, month - 1, day)
 }
 
 /* ---------- real API ---------- */

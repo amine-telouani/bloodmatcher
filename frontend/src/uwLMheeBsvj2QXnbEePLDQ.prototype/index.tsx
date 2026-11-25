@@ -1,16 +1,11 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import Home from '../1WUQztQZipTVEmugphuJqM.frame'
 import SignIn from '../8xqE7k7wCsciXcaxWgwbsu.frame'
 import Register from '../q3JT8iSzqzc9WuaNHhyM84.frame'
-import ForgotPassword from '../b7qpdUa2HMiZT43GBmRCBm.frame'
-import ResetPassword from '../wttFzRaqonYjntcavDSG6e.frame'
 import DonorDashboard from '../vSum2cEi8fg5ASaUJEzvnn.frame'
-import DonorAlert from '../o9pThJqSXhyihjRjaJM5gv.frame'
 import HospitalDashboard from '../j7228o8P61Z2CW1kNDAKoD.frame'
-import RequestTimeline from '../78eiisFvUcAAvk4Ncix4GU.frame'
 import Admin from '../j4rnZZWqnhMNALKdHZ8T8d.frame'
-import States from '../owNKu9EWzffBBsA7MbPmgu.frame'
 import NotFound from '../kDGeYDgpar9A2bHfAUa964.frame'
 
 const HOME = '1WUQztQZipTVEmugphuJqM'
@@ -21,33 +16,38 @@ export const viewport = 'web'
 type Props = { start?: string }
 
 export default function Prototype({ start }: Props) {
-  const [path, setPath] = useState(() => (start ? idToPath[start] ?? '/' : '/'))
-  const go = (p: string) => setPath(p.split('?')[0] ?? '/')
+  const [path, setPath] = useState(() => (start ? idToPath[start] ?? '/' : new URLSearchParams(window.location.search).get('screen') ?? '/'))
+  const go = (p: string) => {
+    setPath(p.split('?')[0] ?? '/')
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }
 
-  const alert = path.match(/^\/alerts\/([^/]+)/)
-  const timeline = path.match(/^\/requests\/([^/]+)\/escalation/)
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    if (url.searchParams.get('screen') !== '/design-preview') return
+    url.searchParams.delete('screen')
+    window.history.replaceState(window.history.state, '', url)
+  }, [])
 
-  if (alert) return <DonorAlert id={alert[1]} onNavigate={go} />
-  if (timeline) return <RequestTimeline id={timeline[1]} onNavigate={go} />
+  if (/^\/alerts\/[^/]+/.test(path)) return <DonorDashboard onNavigate={go} />
+  if (/^\/requests\/[^/]+\/escalation/.test(path)) return <HospitalDashboard onNavigate={go} />
   switch (path) {
     case '/':
+    case '/design-preview':
+    case '/states':
       return <Home onNavigate={go} />
     case '/login':
+    case '/forgot-password':
+    case '/reset-password':
       return <SignIn onNavigate={go} />
     case '/register':
       return <Register onNavigate={go} />
-    case '/forgot-password':
-      return <ForgotPassword onNavigate={go} />
-    case '/reset-password':
-      return <ResetPassword onNavigate={go} />
     case '/donor':
       return <DonorDashboard onNavigate={go} />
     case '/hospital':
       return <HospitalDashboard onNavigate={go} />
     case '/admin':
       return <Admin onNavigate={go} />
-    case '/states':
-      return <States onNavigate={go} />
     default:
       return <NotFound onNavigate={go} />
   }
@@ -55,6 +55,7 @@ export default function Prototype({ start }: Props) {
 
 const idToPath: Record<string, string> = {
   [HOME]: '/',
+  jk3wN8cxrz2hKKVkf6Tfve: '/design-preview',
   '8xqE7k7wCsciXcaxWgwbsu': '/login',
   q3JT8iSzqzc9WuaNHhyM84: '/register',
   b7qpdUa2HMiZT43GBmRCBm: '/forgot-password',
