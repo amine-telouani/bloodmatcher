@@ -14,6 +14,7 @@ import { HeroIllustration } from './components/HeroIllustration'
 import { ScrollGuide } from './components/ScrollGuide'
 import { BenefitGlyph } from './components/BenefitGlyph'
 import { RadiusDiagram } from './components/RadiusDiagram'
+import { CommunityGallery } from './components/CommunityGallery'
 import { NetworkMap } from './components/NetworkMap'
 import { FaqList } from './components/FaqList'
 import { useSectionBackdrop } from './components/useSectionBackdrop'
@@ -118,6 +119,15 @@ export default function Landing(props: Props) {
                   <p aria-hidden className="mt-6 font-hand text-2xl text-red-deep">
                     together, we're stronger
                   </p>
+                  <img
+                    src="/images/community/giving-together.jpg"
+                    alt="A donor smiling and giving a thumbs-up at a blood drive"
+                    width="1000"
+                    height="625"
+                    loading="lazy"
+                    decoding="async"
+                    className="mt-7 aspect-[16/10] w-full max-w-md rounded-[24px] object-cover ring-1 ring-ink/10"
+                  />
                 </Reveal>
                 <ul className="divide-y divide-ink/15 border-y border-ink/15">
                   {BENEFITS.map((b, i) => (
@@ -180,6 +190,8 @@ export default function Landing(props: Props) {
               </div>
             </section>
 
+            <CommunityGallery />
+
             <section data-tone="blush" style={tone('blush')} aria-labelledby="urgency-title" className="py-16 sm:py-20">
               <div className="mx-auto max-w-6xl px-5 sm:px-8">
                 <Reveal className="grid items-center gap-8 rounded-[28px] border border-ink/10 bg-paper/75 p-6 sm:p-10 lg:grid-cols-[1fr_1fr]">
@@ -190,7 +202,7 @@ export default function Landing(props: Props) {
                   <ul className="grid grid-cols-3 gap-2 sm:gap-4" aria-label="Request urgency levels">
                     {(['NORMAL', 'URGENT', 'CRITICAL'] as const).map(urgency => (
                       <li key={urgency} className="flex justify-center rounded-2xl bg-paper px-2 py-4 ring-1 ring-ink/10 sm:py-5">
-                        <UrgencyBloodBag urgency={urgency} size="lg" />
+                        <UrgencyBloodBag urgency={urgency} size="lg" className="w-full" />
                       </li>
                     ))}
                   </ul>

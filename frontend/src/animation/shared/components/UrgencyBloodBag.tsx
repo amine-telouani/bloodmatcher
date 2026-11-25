@@ -1,5 +1,5 @@
-import { useEffect, useId, useRef } from 'react'
-import { animate, motion, useInView, useMotionValue, useReducedMotion, useTransform } from 'framer-motion'
+import { useEffect, useId, useRef, type PointerEvent } from 'react'
+import { animate, motion, useInView, useMotionValue, useReducedMotion, useSpring, useTransform } from 'framer-motion'
 
 import { COLORS } from '../tokens'
 import type { Urgency } from '../../../shared/bloodmatcher/lib/blood'
@@ -16,6 +16,7 @@ const ENVELOPE = 'M13 12 H35 Q42 12 42 20 V48 Q42 56 34 57 H14 Q6 56 6 48 V20 Q6
 const CHAMBER = 'M13 14 H35 Q40.5 14 40.5 20 V48 Q40.5 54.8 34 55 H14 Q7.5 54.8 7.5 48 V20 Q7.5 14 13 14 Z'
 const EMPTY_SURFACE = 59
 const SIZES = { sm: 'w-8', md: 'w-11', lg: 'w-16' }
+const MAX_POINTER_TILT = { sm: 1.6, md: 2.1, lg: 2.7 }
 
 // Keep the two crests in opposite phases so the liquid rocks, then settles.
 function surface(y: number, tilt: number, ripple: number) {
@@ -44,8 +45,33 @@ export function UrgencyBloodBag({ urgency, size = 'md', showLabel = true, emphas
   const duration = style.duration * (size === 'sm' ? 0.8 : 1)
   const height = useMotionValue(reducedMotion ? level : EMPTY_SURFACE)
   const slosh = useMotionValue(0)
-  const front = useTransform(() => liquid(height.get(), slosh.get(), 0.45 + slosh.get() * 1.2))
-  const back = useTransform(() => liquid(height.get() - 0.7, -slosh.get() * 0.9, -0.45 - slosh.get() * 1.3))
+  const pointerTilt = useSpring(0, { stiffness: 145, damping: 19, mass: 0.8 })
+  const pointerRipple = useSpring(0, { stiffness: 95, damping: 17, mass: 0.85 })
+  const front = useTransform(() => liquid(
+    height.get(),
+    slosh.get() + pointerTilt.get(),
+    0.45 + slosh.get() * 1.2 + pointerRipple.get(),
+  ))
+  const back = useTransform(() => liquid(
+    height.get() - 0.7,
+    -slosh.get() * 0.9 + pointerTilt.get() * 0.74,
+    -0.45 - slosh.get() * 1.3 - pointerRipple.get(),
+  ))
+
+  function followPointer(event: PointerEvent<HTMLSpanElement>) {
+    if (event.pointerType !== 'mouse' || reducedMotion || !inView) return
+    const { left, top, width, height: boundsHeight } = event.currentTarget.getBoundingClientRect()
+    const x = (event.clientX - left) / width * 2 - 1
+    const y = (event.clientY - top) / boundsHeight * 2 - 1
+    const maxTilt = urgency === 'CRITICAL' ? 1.4 : MAX_POINTER_TILT[size]
+    pointerTilt.set(Math.max(-1, Math.min(1, x)) * maxTilt)
+    pointerRipple.set(Math.max(-1, Math.min(1, y)) * 0.9)
+  }
+
+  function settlePointer() {
+    pointerTilt.set(0)
+    pointerRipple.set(0)
+  }
 
   useEffect(() => {
     if (reducedMotion) {
@@ -66,7 +92,12 @@ export function UrgencyBloodBag({ urgency, size = 'md', showLabel = true, emphas
   }, [delay, duration, height, inView, level, reducedMotion, slosh])
 
   return (
-    <span className={`inline-flex flex-col items-center gap-1.5 ${className}`}>
+    <span
+      className={`inline-flex flex-col items-center gap-1.5 ${className}`}
+      onPointerMove={followPointer}
+      onPointerLeave={settlePointer}
+      onPointerCancel={settlePointer}
+    >
       <svg ref={ref} viewBox="0 0 48 70" className={`${SIZES[size]} shrink-0`} role={showLabel ? undefined : 'img'} aria-label={showLabel ? undefined : `${style.label} urgency`} aria-hidden={showLabel || undefined} focusable="false" data-urgency-bag={urgency}>
         <defs>
           <clipPath id={`${id}-chamber`}><path d={CHAMBER} /></clipPath>
