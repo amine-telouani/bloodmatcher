@@ -1,5 +1,5 @@
 import { useRef } from 'react'
-import { MotionConfig, motion, useScroll } from 'framer-motion'
+import { MotionConfig, motion, useScroll, useSpring, useTransform } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 
 import { NavProvider, Link, type AppPath } from '../shared/nav/Nav'
@@ -11,7 +11,7 @@ import { useChoreography } from '../shared/hooks/useChoreography'
 import { SECTION_TONES, type SectionTone } from '../shared/tokens'
 
 import { HeroIllustration } from './components/HeroIllustration'
-import { ScrollGuide } from './components/ScrollGuide'
+import { GUIDE_ARRIVAL, ScrollGuide } from './components/ScrollGuide'
 import { BenefitGlyph } from './components/BenefitGlyph'
 import { RadiusDiagram } from './components/RadiusDiagram'
 import { CommunityGallery } from './components/CommunityGallery'
@@ -24,10 +24,15 @@ type Props = Partial<typeof args> & { onNavigate: (to: AppPath) => void }
 export default function Landing(props: Props) {
   const { headline, onNavigate } = { ...args, ...props }
   const rootRef = useRef<HTMLDivElement>(null)
+  const mainRef = useRef<HTMLElement>(null)
   const heroRef = useRef<HTMLElement>(null)
+  const artworkRef = useRef<HTMLDivElement>(null)
+  const matchingDropRef = useRef<SVGPathElement>(null)
   const { mode, reduced } = useChoreography()
   const backdrop = useSectionBackdrop(rootRef)
   const { scrollYProgress: heroProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
+  const flow = useSpring(heroProgress, { stiffness: 140, damping: 30, mass: 0.5, restDelta: 0.0005 })
+  const matchingDropFill = useTransform(flow, [GUIDE_ARRIVAL, 0.89], [43, 15])
   const tone = (t: SectionTone) => (reduced ? { backgroundColor: SECTION_TONES[t] } : undefined)
 
   return (
@@ -46,7 +51,7 @@ export default function Landing(props: Props) {
           </a>
           <Navbar variant="public" />
 
-          <main id="main">
+          <main ref={mainRef} id="main" className="relative isolate">
             {/* 1 · Hero */}
             <section
               ref={heroRef}
@@ -93,11 +98,10 @@ export default function Landing(props: Props) {
                   </Reveal>
                 </div>
 
-                <div className="pointer-events-none relative isolate mx-auto w-full overflow-hidden max-w-[340px] sm:max-w-[420px] md:max-w-[500px]">
+                <div ref={artworkRef} className="pointer-events-none relative isolate mx-auto w-full overflow-hidden max-w-[340px] sm:max-w-[420px] md:max-w-[500px]">
                   <HeroIllustration progress={heroProgress} mode={mode} />
                 </div>
               </div>
-              {mode === 'full' && <ScrollGuide progress={heroProgress} />}
             </section>
 
             {/* 2 · Why it matters */}
@@ -107,7 +111,7 @@ export default function Landing(props: Props) {
               aria-labelledby="why-title"
               className="relative py-20 sm:py-28"
             >
-              <div className="mx-auto grid max-w-6xl gap-12 px-5 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-20">
+              <div className="mx-auto grid max-w-6xl gap-12 px-5 sm:px-8 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:gap-8 lg:gap-20">
                 <Reveal className="lg:pt-2">
                   <h2 id="why-title" className="font-display text-4xl font-semibold leading-tight sm:text-5xl">
                     Asking the right people, not everyone
@@ -132,18 +136,22 @@ export default function Landing(props: Props) {
                 <ul className="divide-y divide-ink/15 border-y border-ink/15">
                   {BENEFITS.map((b, i) => (
                     <li key={b.title}>
-                      <Reveal delay={i * 0.07} className="grid grid-cols-[56px_1fr] gap-5 py-7 sm:grid-cols-[72px_1fr]">
-                        <BenefitGlyph kind={b.glyph} />
-                        <div className="min-w-0">
+                      <div className="grid grid-cols-[56px_1fr] gap-5 py-7 sm:grid-cols-[72px_1fr]">
+                        <BenefitGlyph kind={b.glyph} dropRef={matchingDropRef} dropFillTop={mode === 'full' ? matchingDropFill : undefined} />
+                        <Reveal delay={i * 0.07} className="min-w-0">
                           <h3 className="font-display text-2xl font-semibold">{b.title}</h3>
                           <p className="mt-2 leading-relaxed text-ink-soft">{b.body}</p>
-                        </div>
-                      </Reveal>
+                        </Reveal>
+                      </div>
                     </li>
                   ))}
                 </ul>
               </div>
             </section>
+
+            {mode === 'full' && (
+              <ScrollGuide progress={flow} main={mainRef} hero={heroRef} artwork={artworkRef} target={matchingDropRef} />
+            )}
 
             {/* 3 · How it works */}
             <section

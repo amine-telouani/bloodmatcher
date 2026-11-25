@@ -20,8 +20,10 @@ export function CommunityGallery() {
         <div className="grid gap-5 md:grid-cols-3">
           {PHOTOS.map((photo, i) => (
             <Reveal key={photo.src} delay={i * 0.07} className="h-full">
-              <figure className="flex h-full flex-col overflow-hidden rounded-[28px] bg-paper ring-1 ring-ink/10">
-                <img src={`/images/community/${photo.src}`} alt={photo.alt} width="1000" height="625" loading="lazy" decoding="async" className="aspect-[4/3] w-full object-cover" />
+              <figure className="group flex h-full flex-col overflow-hidden rounded-[28px] bg-paper ring-1 ring-ink/10 motion-safe:transition-[translate,box-shadow] motion-safe:duration-[320ms] motion-safe:ease-out motion-safe:hover:-translate-y-1.5 motion-safe:hover:shadow-[0_16px_32px_-20px_rgba(96,32,44,0.45)]">
+                <div className="overflow-hidden">
+                  <img src={`/images/community/${photo.src}`} alt={photo.alt} width="1000" height="625" loading="lazy" decoding="async" className="aspect-[4/3] w-full object-cover motion-safe:transition-transform motion-safe:duration-[460ms] motion-safe:ease-out motion-safe:group-hover:scale-[1.025]" />
+                </div>
                 <figcaption className="p-6">
                   <h3 className="font-display text-2xl font-medium">{photo.title}</h3>
                   <p className="mt-2 leading-relaxed text-ink-soft">{photo.text}</p>

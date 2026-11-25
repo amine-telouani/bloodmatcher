@@ -1,34 +1,53 @@
-import { motion, useSpring, useTransform, type MotionValue } from 'framer-motion'
+import { useEffect, useState, type RefObject } from 'react'
+import { motion, useTransform, type MotionValue } from 'framer-motion'
 
 import { COLORS } from '../../shared/tokens'
 
-/** The scroll-driven tube and droplet fit inside the hero's bottom padding. */
-export function ScrollGuide({ progress }: { progress: MotionValue<number> }) {
-  const p = useSpring(progress, { stiffness: 140, damping: 30, mass: 0.5, restDelta: 0.0005 })
-  const length = useTransform(p, [0.05, 0.65], [0, 1])
-  const lineOpacity = useTransform(p, [0.02, 0.12, 0.9, 1], [0, 1, 1, 0.5])
-  const dropOpacity = useTransform(p, [0.62, 0.77], [0, 1])
-  const dropY = useTransform(p, [0.62, 0.8], [-6, 0])
+type Props = {
+  progress: MotionValue<number>
+  main: RefObject<HTMLElement>
+  hero: RefObject<HTMLElement>
+  artwork: RefObject<HTMLDivElement>
+  target: RefObject<SVGPathElement>
+}
 
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-2 z-0 mx-auto max-w-6xl px-8">
-      <svg viewBox="0 0 1152 142" className="block h-auto w-full">
-        <motion.path
-          d="M842 8 C842 67 545 59 470 78 S412 91 392 99"
-          fill="none"
-          stroke={COLORS.red}
-          strokeWidth="3"
-          strokeLinecap="round"
-          style={{ pathLength: length, opacity: lineOpacity }}
-        />
-        <g transform="translate(392 120)">
-          <motion.path
-            d="M0 -10 C4 -5 8 0 8 4 A8 8 0 0 1 -8 4 C-8 0 -4 -5 0 -10 Z"
-            fill={COLORS.red}
-            style={{ opacity: dropOpacity, y: dropY }}
-          />
-        </g>
-      </svg>
-    </div>
+export const GUIDE_ARRIVAL = 0.7
+
+/** Draw across the section boundary to the tip of the left drop. */
+export function ScrollGuide({ progress, main, hero, artwork, target }: Props) {
+  const [route, setRoute] = useState({ path: '', height: 0 })
+  const draw = useTransform(progress, [0.12, GUIDE_ARRIVAL], [0, 1])
+  const opacity = useTransform(progress, [0.12, 0.24], [0, 0.9])
+
+  useEffect(() => {
+    if (!main.current || !hero.current || !artwork.current || !target.current) return
+    const measure = () => {
+      if (!main.current || !hero.current || !artwork.current || !target.current) return
+      const origin = main.current.getBoundingClientRect()
+      const heroBox = hero.current.getBoundingClientRect()
+      const art = artwork.current.getBoundingClientRect()
+      const icon = target.current.getBoundingClientRect()
+      const x = art.left + art.width / 2 - origin.left
+      const y = heroBox.bottom - origin.top - 92
+      const endX = icon.left + icon.width / 2 - origin.left
+      const endY = icon.top - origin.top
+      const bendY = heroBox.bottom - origin.top + 18
+      const path = `M ${x} ${y} C ${x} ${bendY}, ${endX} ${bendY - 20}, ${endX} ${bendY + 44} L ${endX} ${endY}`
+      const height = Math.ceil(Math.max(y, endY) + 20)
+      setRoute(previous => previous.path === path && previous.height === height ? previous : { path, height })
+    }
+    const observer = new ResizeObserver(measure)
+    for (const element of [main.current, hero.current, artwork.current, target.current.ownerSVGElement]) {
+      if (element) observer.observe(element)
+    }
+    window.addEventListener('resize', measure)
+    measure()
+    return () => { observer.disconnect(); window.removeEventListener('resize', measure) }
+  }, [artwork, hero, main, target])
+
+  return route.path && (
+    <svg aria-hidden data-scroll-guide className="pointer-events-none absolute inset-x-0 top-0 z-10 block w-full" height={route.height}>
+      <motion.path data-guide-line d={route.path} fill="none" stroke={COLORS.red} strokeWidth="2.25" strokeLinecap="round" style={{ pathLength: draw, opacity }} />
+    </svg>
   )
 }
