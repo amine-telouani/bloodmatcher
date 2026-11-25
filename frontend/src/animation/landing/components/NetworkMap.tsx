@@ -40,6 +40,7 @@ export function NetworkMap() {
         if (cancelled || !canvas.current) return
         instance = L.map(canvas.current, { scrollWheelZoom: false, zoomAnimation: false, zoomControl: false, attributionControl: true }).setView([33.576, -7.611], 12)
         map.current = instance
+        instance.attributionControl.setPrefix(false)
         L.control.zoom({ position: 'topright' }).addTo(instance)
         const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 18,
@@ -116,7 +117,6 @@ export function NetworkMap() {
       </div>
       <div className="network-frame" data-map-status={status}>
         <div ref={canvas} className="network-canvas" role="region" aria-label="Interactive map of Casablanca" />
-        <div className="network-badge"><span /> Casablanca · Neighbourhoods</div>
         <button type="button" className="network-reset" onClick={() => { map.current?.closePopup(); map.current?.fitBounds(POINTS.map(p => [p.lat, p.lng]), { padding: [50, 65], animate: !reduced }); setQuery('') }} disabled={status !== 'ready'}>
           <LocateFixed size={17} aria-hidden /> Show all areas
         </button>

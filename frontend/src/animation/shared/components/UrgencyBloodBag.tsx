@@ -2,7 +2,7 @@ import { useEffect, useId, useRef } from 'react'
 import { animate, motion, useInView, useMotionValue, useReducedMotion, useTransform } from 'framer-motion'
 
 import { COLORS } from '../tokens'
-import type { Urgency } from '../types'
+import type { Urgency } from '../../../shared/bloodmatcher/lib/blood'
 
 type Props = {
   urgency: Urgency

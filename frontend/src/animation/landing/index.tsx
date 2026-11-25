@@ -1,54 +1,37 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, MotionConfig, motion, useScroll } from 'framer-motion'
-import { ArrowRight, Info, X } from 'lucide-react'
+import { useRef } from 'react'
+import { MotionConfig, motion, useScroll } from 'framer-motion'
+import { ArrowRight } from 'lucide-react'
 
 import { NavProvider, Link, type AppPath } from '../shared/nav/Nav'
 import { Navbar } from '../shared/components/Navbar'
 import { Reveal } from '../shared/components/Reveal'
-import { RequestCard } from '../shared/components/RequestCard'
-import { DonationWindowCard } from '../shared/components/DonationWindowCard'
+import { UrgencyBloodBag } from '../shared/components/UrgencyBloodBag'
 import { buttonClass } from '../shared/components/buttonStyles'
 import { useChoreography } from '../shared/hooks/useChoreography'
-import { SAMPLE_REQUESTS, SAMPLE_DONORS } from '../shared/preview/sampleData'
-import { EASE_OUT, SECTION_TONES, type SectionTone } from '../shared/tokens'
+import { SECTION_TONES, type SectionTone } from '../shared/tokens'
 
 import { HeroIllustration } from './components/HeroIllustration'
 import { ScrollGuide } from './components/ScrollGuide'
 import { BenefitGlyph } from './components/BenefitGlyph'
 import { RadiusDiagram } from './components/RadiusDiagram'
-import { CommunityGallery } from './components/CommunityGallery'
 import { NetworkMap } from './components/NetworkMap'
 import { FaqList } from './components/FaqList'
 import { useSectionBackdrop } from './components/useSectionBackdrop'
 
-type Props = Partial<typeof args> & {
-  /** Opens the donor dashboard preview (interface preview only). */
-  onOpenPreview?: () => void
-  /** Real app navigation. In the prototype, routes show a note instead. */
-  onNavigate?: (to: AppPath) => void
-}
+type Props = Partial<typeof args> & { onNavigate: (to: AppPath) => void }
 
 export default function Landing(props: Props) {
-  const { headline, onOpenPreview, onNavigate } = { ...args, ...props }
+  const { headline, onNavigate } = { ...args, ...props }
   const rootRef = useRef<HTMLDivElement>(null)
   const heroRef = useRef<HTMLElement>(null)
   const { mode, reduced } = useChoreography()
   const backdrop = useSectionBackdrop(rootRef)
   const { scrollYProgress: heroProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
-  const [routeNote, setRouteNote] = useState<AppPath | null>(null)
-
-  useEffect(() => {
-    if (!routeNote) return
-    const t = window.setTimeout(() => setRouteNote(null), 3200)
-    return () => window.clearTimeout(t)
-  }, [routeNote])
-
-  const navigate = (to: AppPath) => (onNavigate ? onNavigate(to) : setRouteNote(to))
   const tone = (t: SectionTone) => (reduced ? { backgroundColor: SECTION_TONES[t] } : undefined)
 
   return (
     <MotionConfig reducedMotion="user">
-      <NavProvider navigate={navigate}>
+      <NavProvider navigate={onNavigate}>
         <motion.div
           ref={rootRef}
           style={reduced ? { backgroundColor: SECTION_TONES.cream } : { backgroundColor: backdrop }}
@@ -135,10 +118,6 @@ export default function Landing(props: Props) {
                   <p aria-hidden className="mt-6 font-hand text-2xl text-red-deep">
                     together, we're stronger
                   </p>
-                  <figure className="mt-7 max-w-md overflow-hidden rounded-[24px] bg-paper ring-1 ring-ink/10">
-                    <img src="/images/community/giving-together.jpg" alt="A donor smiling and giving a thumbs-up at a blood drive" width="1000" height="625" loading="lazy" decoding="async" className="aspect-[16/10] w-full object-cover" />
-                    <figcaption className="px-4 py-3 text-sm text-muted">A small act, a human connection. Illustrative stock photograph.</figcaption>
-                  </figure>
                 </Reveal>
                 <ul className="divide-y divide-ink/15 border-y border-ink/15">
                   {BENEFITS.map((b, i) => (
@@ -201,101 +180,24 @@ export default function Landing(props: Props) {
               </div>
             </section>
 
-            <CommunityGallery />
-
-            {/* 4 · Interface preview */}
-            <section
-              data-tone="pink"
-              style={tone('pink')}
-              aria-labelledby="preview-title"
-              className="py-20 sm:py-28"
-            >
+            <section data-tone="blush" style={tone('blush')} aria-labelledby="urgency-title" className="py-16 sm:py-20">
               <div className="mx-auto max-w-6xl px-5 sm:px-8">
-                <Reveal className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-                  <div className="max-w-xl">
-                    <h2 id="preview-title" className="font-display text-4xl font-semibold leading-tight sm:text-5xl">
-                      Interface preview
-                    </h2>
-                    <p className="mt-4 text-lg leading-relaxed text-ink-soft">
-                      What a donor sees: requests marked by urgency, and when their next donation window opens.
-                    </p>
+                <Reveal className="grid items-center gap-8 rounded-[28px] border border-ink/10 bg-paper/75 p-6 sm:p-10 lg:grid-cols-[1fr_1fr]">
+                  <div>
+                    <h2 id="urgency-title" className="font-display text-3xl font-semibold leading-tight sm:text-4xl">Read a request at a glance</h2>
+                    <p className="mt-3 max-w-md leading-relaxed text-ink-soft">Each request shows its blood type, deadline and urgency. A lower fill signals a more urgent request.</p>
                   </div>
-                  <p className="inline-flex items-center gap-2 rounded-full bg-paper/80 px-3.5 py-1.5 text-sm font-medium text-ink ring-1 ring-ink/15">
-                    <Info className="h-4 w-4 shrink-0" aria-hidden />
-                    Sample data — not live requests
-                  </p>
-                </Reveal>
-
-                <div className="mt-10 grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-                  <ul className="flex flex-col gap-4" aria-label="Sample requests">
-                    {SAMPLE_REQUESTS.map((r, i) => (
-                      <li key={r.id}>
-                        <Reveal delay={i * 0.06}>
-                          <RequestCard request={r} />
-                        </Reveal>
+                  <ul className="grid grid-cols-3 gap-2 sm:gap-4" aria-label="Request urgency levels">
+                    {(['NORMAL', 'URGENT', 'CRITICAL'] as const).map(urgency => (
+                      <li key={urgency} className="flex justify-center rounded-2xl bg-paper px-2 py-4 ring-1 ring-ink/10 sm:py-5">
+                        <UrgencyBloodBag urgency={urgency} size="lg" />
                       </li>
                     ))}
                   </ul>
-                  <Reveal delay={0.12} className="flex flex-col gap-4">
-                    <DonationWindowCard
-                      lastDonationDate={SAMPLE_DONORS.waiting.lastDonationDate}
-                      available={SAMPLE_DONORS.waiting.available}
-                    />
-                    <div className="rounded-3xl bg-paper/70 p-5 ring-1 ring-ink/10">
-                      <p className="leading-relaxed text-ink-soft">
-                        The bag shows urgency at a glance — fuller for normal, nearly empty for critical — always with a written
-                        label. It's a symbol, not a stock level.
-                      </p>
-                      {onOpenPreview && (
-                        <button type="button" onClick={onOpenPreview} className={buttonClass('quiet', 'md', 'mt-3 text-[15px]')}>
-                          Open the dashboard preview
-                          <ArrowRight className="h-4 w-4" aria-hidden />
-                        </button>
-                      )}
-                    </div>
-                  </Reveal>
-                </div>
-              </div>
-            </section>
-
-            {/* 5 · Sample testimonials */}
-            <section
-              data-tone="blush"
-              style={tone('blush')}
-              aria-labelledby="voices-title"
-              className="py-20 sm:py-28"
-            >
-              <div className="mx-auto max-w-6xl px-5 sm:px-8">
-                <Reveal>
-                  <h2 id="voices-title" className="font-display text-4xl font-semibold leading-tight sm:text-5xl">
-                    How it's meant to feel
-                  </h2>
                 </Reveal>
-                <div className="mt-10 grid gap-5 md:grid-cols-2">
-                  {TESTIMONIALS.map((t, i) => (
-                    <Reveal key={t.role} delay={i * 0.08} className="h-full">
-                      <figure className="flex h-full flex-col rounded-[28px] bg-paper p-6 ring-1 ring-ink/10 sm:p-8">
-                        <span className="self-start rounded-full bg-blush px-3 py-1 text-xs font-semibold text-red-deep">
-                          Sample testimonial
-                        </span>
-                        <blockquote className="mt-5 font-display text-xl font-medium leading-snug sm:text-2xl">
-                          “{t.quote}”
-                        </blockquote>
-                        <figcaption className="mt-auto flex items-center gap-3 pt-7">
-                          <img src={t.portrait} alt="" width="80" height="80" loading="lazy" decoding="async" className="h-20 w-20 shrink-0 rounded-2xl object-cover ring-1 ring-ink/10" />
-                          <div>
-                            <p className="font-medium">{t.role}</p>
-                            <p className="text-sm text-muted">Illustrative, not a real endorsement</p>
-                          </div>
-                        </figcaption>
-                      </figure>
-                    </Reveal>
-                  ))}
-                </div>
               </div>
             </section>
 
-            {/* 6 · FAQ */}
             <section
               id="faq"
               data-tone="cream"
@@ -349,7 +251,7 @@ export default function Landing(props: Props) {
               <footer className="mx-auto mt-20 max-w-6xl px-5 pb-10 sm:px-8">
                 <div className="flex flex-col gap-5 border-t border-ink/20 pt-6 text-sm text-ink sm:flex-row sm:items-center sm:justify-between">
                   <p>
-                    <span className="font-display text-base font-semibold">BloodMatcher</span> · a student-built project
+                    <span className="font-display text-base font-semibold">BloodMatcher</span>
                   </p>
                   <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
                     <a href="#how-it-works" className="hover:underline">
@@ -370,30 +272,6 @@ export default function Landing(props: Props) {
             </section>
           </main>
 
-          <AnimatePresence>
-            {routeNote && (
-              <motion.div
-                role="status"
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 12 }}
-                transition={{ duration: 0.2, ease: EASE_OUT }}
-                className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-sm items-center gap-3 rounded-full bg-ink py-2.5 pl-5 pr-2 text-sm text-cream"
-              >
-                <span className="min-w-0 flex-1">
-                  In the app this opens <code className="font-semibold">{routeNote}</code>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setRouteNote(null)}
-                  aria-label="Dismiss"
-                  className="rounded-full p-1.5 transition-colors duration-150 hover:bg-white/10"
-                >
-                  <X className="h-4 w-4" aria-hidden />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
       </NavProvider>
     </MotionConfig>
@@ -446,21 +324,6 @@ const STEPS = [
     actor: 'Hospital',
     title: 'Confirms the donation',
     body: "Staff record the donation once it's complete. That date starts the donor's 90-day waiting period in the app.",
-  },
-]
-
-const TESTIMONIALS = [
-  {
-    role: 'Donor',
-    portrait: '/images/testimonials/portrait-donor.jpg',
-    quote:
-      "I only hear about requests my blood type can help with, close to where I live — so when an alert comes, I actually read it.",
-  },
-  {
-    role: 'Hospital coordinator',
-    portrait: '/images/testimonials/portrait-coordinator.jpg',
-    quote:
-      'We post the type, units and deadline, then see who has accepted. Nothing counts as donated until we confirm it ourselves.',
   },
 ]
 

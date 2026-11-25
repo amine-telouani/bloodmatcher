@@ -4,9 +4,10 @@ import { CalendarDays, CirclePause, CircleCheck } from 'lucide-react'
 
 import { COOLDOWN_DAYS, formatDay, getDonationWindow } from '../lib/donationWindow'
 import { EASE_OUT } from '../tokens'
-import type { DonorMe } from '../types'
 
-type Props = Pick<DonorMe, 'lastDonationDate' | 'available'> & {
+type Props = {
+  lastDonationDate: string | null
+  available: boolean
   /** Injected for tests/previews; defaults to now. */
   today?: Date
   className?: string
