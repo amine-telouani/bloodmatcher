@@ -22,3 +22,11 @@ Exported from [this OS](https://www.magicpatterns.com/os/aG8GiqgDDw7M5fmGX4XqPn)
 - [Sign In](pages/sign-in/) — `src/8xqE7k7wCsciXcaxWgwbsu.frame`
 - [States](pages/states/) — `src/owNKu9EWzffBBsA7MbPmgu.frame`
 - [uwLMheeBsvj2QXnbEePLDQ](pages/uwlmheebsvj2qxnbeepldq/) — `src/uwLMheeBsvj2QXnbEePLDQ.prototype`
+
+## Animation design
+
+The landing page and animation components live in `src/animation`. The existing home frame opens the landing page, with registration and sign-in routed into the application. The donor and hospital screens reuse the urgency bag; the donor account section derives its donation window from the real profile date and availability.
+
+The labeled sample dashboard is available at `/?screen=/design-preview`. Its interactions use preview data and do not write to the API. The live donor screen remains connected to the existing API adapter.
+
+Run `npm test` for the donation-window calendar checks (Node.js 22.6+ with type stripping). Run `npm run build` to validate all frontend entry points. Scroll motion respects the reduced-motion preference and simplifies on narrow screens.

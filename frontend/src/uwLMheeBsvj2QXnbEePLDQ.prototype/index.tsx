@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 
 import Home from '../1WUQztQZipTVEmugphuJqM.frame'
+import DashboardPreview from '../animation/preview'
 import SignIn from '../8xqE7k7wCsciXcaxWgwbsu.frame'
 import Register from '../q3JT8iSzqzc9WuaNHhyM84.frame'
 import ForgotPassword from '../b7qpdUa2HMiZT43GBmRCBm.frame'
@@ -21,8 +22,11 @@ export const viewport = 'web'
 type Props = { start?: string }
 
 export default function Prototype({ start }: Props) {
-  const [path, setPath] = useState(() => (start ? idToPath[start] ?? '/' : '/'))
-  const go = (p: string) => setPath(p.split('?')[0] ?? '/')
+  const [path, setPath] = useState(() => (start ? idToPath[start] ?? '/' : new URLSearchParams(window.location.search).get('screen') ?? '/'))
+  const go = (p: string) => {
+    setPath(p.split('?')[0] ?? '/')
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }
 
   const alert = path.match(/^\/alerts\/([^/]+)/)
   const timeline = path.match(/^\/requests\/([^/]+)\/escalation/)
@@ -32,6 +36,8 @@ export default function Prototype({ start }: Props) {
   switch (path) {
     case '/':
       return <Home onNavigate={go} />
+    case '/design-preview':
+      return <DashboardPreview onBack={() => go('/')} />
     case '/login':
       return <SignIn onNavigate={go} />
     case '/register':
@@ -55,6 +61,7 @@ export default function Prototype({ start }: Props) {
 
 const idToPath: Record<string, string> = {
   [HOME]: '/',
+  jk3wN8cxrz2hKKVkf6Tfve: '/design-preview',
   '8xqE7k7wCsciXcaxWgwbsu': '/login',
   q3JT8iSzqzc9WuaNHhyM84: '/register',
   b7qpdUa2HMiZT43GBmRCBm: '/forgot-password',

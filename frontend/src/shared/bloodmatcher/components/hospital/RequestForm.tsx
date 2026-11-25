@@ -13,22 +13,19 @@ type Props = {
   onCancel?: (() => void) | undefined
 }
 
-type Errors = Partial<Record<'bloodType' | 'units' | 'urgency' | 'notes', string>>
+type Errors = Partial<Record<'bloodType' | 'units' | 'urgency', string>>
 
 const URGENCIES: { value: Urgency; hint: string }[] = [
   { value: 'CRITICAL', hint: 'Needed within hours' },
   { value: 'URGENT', hint: 'Needed today' },
-  { value: 'NORMAL', hint: 'Within a few days' },
+  { value: 'NORMAL', hint: 'Needed within 24 hours' },
 ]
-
-const NOTES_MAX = 280
 
 /** Post a new urgent blood request. */
 export function RequestForm({ api, onCreated, onAuthFailed, onCancel }: Props) {
   const [bloodType, setBloodType] = useState<BloodType | ''>('')
   const [units, setUnits] = useState('1')
   const [urgency, setUrgency] = useState<Urgency>('URGENT')
-  const [notes, setNotes] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
   const [serverErrors, setServerErrors] = useState<Errors>({})
@@ -43,7 +40,6 @@ export function RequestForm({ api, onCreated, onAuthFailed, onCancel }: Props) {
     const n = Number(units)
     if (!/^\d+$/.test(units.trim())) e.units = 'Enter a whole number of units.'
     else if (n < 1 || n > 20) e.units = 'Request between 1 and 20 units.'
-    if (notes.length > NOTES_MAX) e.notes = `Keep notes under ${NOTES_MAX} characters.`
     return e
   }
 
@@ -57,7 +53,7 @@ export function RequestForm({ api, onCreated, onAuthFailed, onCancel }: Props) {
     if (saving) return
     setSubmitted(true)
     const errs = validate()
-    const first = (['bloodType', 'units', 'notes'] as const).find((f) => errs[f])
+    const first = (['bloodType', 'units'] as const).find((f) => errs[f])
     if (first) {
       formRef.current?.querySelector<HTMLElement>(`[name="${first}"]`)?.focus()
       return
@@ -65,7 +61,7 @@ export function RequestForm({ api, onCreated, onAuthFailed, onCancel }: Props) {
     setSaving(true)
     setFormError(null)
     try {
-      const req = await api.create({ bloodType: bloodType as BloodType, units: Number(units), urgency, notes: notes.trim() })
+      const req = await api.create({ bloodType: bloodType as BloodType, units: Number(units), urgency, notes: '' })
       onCreated(req)
     } catch (err) {
       if (onAuthFailed(err)) return
@@ -79,7 +75,7 @@ export function RequestForm({ api, onCreated, onAuthFailed, onCancel }: Props) {
   return (
     <section className="bm-card hd-card" aria-labelledby="hd-new-title">
       <h2 id="hd-new-title" className="bm-card-title">New urgent request</h2>
-      <p className="hd-card-lede">Compatible donors starting within 5 km and widening to 60 km are alerted as soon as you post.</p>
+      <p className="hd-card-lede">The search starts within 5 km and can widen to 60 km as needed.</p>
 
       <form ref={formRef} className="bm-form" onSubmit={submit} noValidate>
         <fieldset className="bm-blood" disabled={saving} aria-describedby={errors.bloodType ? 'hd-bt-error' : undefined}>
@@ -150,31 +146,6 @@ export function RequestForm({ api, onCreated, onAuthFailed, onCancel }: Props) {
             ))}
           </div>
         </fieldset>
-
-        <div className="bm-field">
-          <div className="bm-label-row">
-            <label htmlFor="hd-notes">Notes for donors</label>
-            <span className={`bm-hint ${notes.length > NOTES_MAX ? 'hd-over' : ''}`}>
-              {notes.length}/{NOTES_MAX}
-            </span>
-          </div>
-          <textarea
-            id="hd-notes"
-            name="notes"
-            rows={3}
-            placeholder="Optional — e.g. which entrance to use, or who to ask for."
-            value={notes}
-            onChange={(e) => {
-              setNotes(e.target.value)
-              touch()
-            }}
-            aria-invalid={!!errors.notes}
-            aria-describedby={errors.notes ? 'hd-notes-error' : undefined}
-            disabled={saving}
-            className="hd-textarea"
-          />
-          {errors.notes && <p id="hd-notes-error" className="bm-field-error">{errors.notes}</p>}
-        </div>
 
         {formError && <p className="bm-error" role="alert">{formError}</p>}
 

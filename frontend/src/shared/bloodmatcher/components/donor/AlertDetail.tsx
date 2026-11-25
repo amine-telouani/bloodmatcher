@@ -1,3 +1,4 @@
+import { UrgencyBloodBag } from '../../../../animation/shared/components/UrgencyBloodBag'
 import { useState } from 'react'
 
 import { ApiError } from '../../lib/api'
@@ -20,7 +21,6 @@ type Answer = 'ACCEPTED' | 'DECLINED'
 export function AlertDetail({ alert: a, api, eligibleFrom, flash, onResponded, onAuthFailed }: Props) {
   const [saving, setSaving] = useState<Answer | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [withdrawing, setWithdrawing] = useState(false)
 
   const open = a.status === 'OPEN'
   const going = a.response === 'ACCEPTED' || a.response === 'DONATED'
@@ -36,7 +36,6 @@ export function AlertDetail({ alert: a, api, eligibleFrom, flash, onResponded, o
     setError(null)
     try {
       const updated = await api.respond(a.requestId, response)
-      setWithdrawing(false)
       onResponded(updated)
     } catch (err) {
       if (onAuthFailed(err)) return
@@ -61,6 +60,7 @@ export function AlertDetail({ alert: a, api, eligibleFrom, flash, onResponded, o
         )}
 
         <div className="hd-detail-head">
+          {open && <span aria-hidden="true"><UrgencyBloodBag urgency={a.urgency} size="md" showLabel={false} emphasize /></span>}
           <span className={`hd-type hd-type--lg ${open ? '' : 'is-muted'}`}>{bloodLabel(a.bloodType)}</span>
           <div className="hd-detail-titles">
             <h2 id="dd-detail-title" className="hd-detail-title">
@@ -142,7 +142,7 @@ export function AlertDetail({ alert: a, api, eligibleFrom, flash, onResponded, o
         ) : going ? (
             <div className="dd-going">
               <p className="dd-going-title">You’re expected at {a.hospitalName}.</p>
-              <p>Bring photo ID and go to the blood bank reception. Call if your plans change on the way.</p>
+              <p>Contact the hospital for arrival instructions or if your plans change.</p>
               <div className="dd-links">
                 {mapsUrl && (
                     <a className="bm-ghost" href={mapsUrl} target="_blank" rel="noreferrer">
@@ -155,46 +155,10 @@ export function AlertDetail({ alert: a, api, eligibleFrom, flash, onResponded, o
                     </a>
                 )}
               </div>
-              {withdrawing ? (
-                  <div className="hd-confirm" role="alertdialog" aria-labelledby="dd-withdraw-q">
-                    <p id="dd-withdraw-q" className="hd-confirm-q">
-                      Tell {a.hospitalName} you can no longer come?
-                    </p>
-                    <div className="hd-confirm-btns">
-                      <button
-                          type="button"
-                          className="bm-button hd-danger"
-                          onClick={() => answer('DECLINED')}
-                          disabled={saving !== null}
-                          aria-busy={saving === 'DECLINED'}
-                      >
-                        {saving === 'DECLINED' ? spinner('Sending…') : 'Yes, I can’t come'}
-                      </button>
-                      <button type="button" className="bm-ghost" onClick={() => setWithdrawing(false)} disabled={saving !== null}>
-                        I’m still coming
-                      </button>
-                    </div>
-                  </div>
-              ) : (
-                  <button type="button" className="hd-text-danger dd-withdraw" onClick={() => setWithdrawing(true)}>
-                    I can no longer come
-                  </button>
-              )}
             </div>
         ) : (
             <div className="dd-answer">
               <p className="dd-closed">You told the hospital you can’t make it.</p>
-              {!eligibleFrom && (
-                  <button
-                      type="button"
-                      className="bm-ghost"
-                      onClick={() => answer('ACCEPTED')}
-                      disabled={saving !== null}
-                      aria-busy={saving === 'ACCEPTED'}
-                  >
-                    {saving === 'ACCEPTED' ? spinner('Sending…', true) : 'I can come after all'}
-                  </button>
-              )}
             </div>
         )}
       </section>

@@ -1,3 +1,4 @@
+import { UrgencyBloodBag } from '../animation/shared/components/UrgencyBloodBag'
 import { NavProvider } from '../shared/bloodmatcher/nav'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -114,7 +115,7 @@ function HospitalDashboardPage() {
     setRequests((prev) => prev.map((r) => (r.id === req.id ? req : r)))
     setFlash({
       requestId: req.id,
-      text: req.status === 'FULFILLED' ? 'Marked as fulfilled. Donors have been told they’re no longer needed.' : 'Request cancelled. Donors have been told it’s no longer needed.',
+      text: 'Request cancelled.',
     })
   }
 
@@ -273,6 +274,7 @@ function HospitalDashboardPage() {
                                             setPanel({ kind: 'detail', id: r.id })
                                           }}
                                       >
+                              {r.status === 'OPEN' && <span aria-hidden="true"><UrgencyBloodBag urgency={r.urgency} size="sm" showLabel={false} /></span>}
                               <span className={`hd-type ${r.status !== 'OPEN' ? 'is-muted' : ''}`}>
                                 {bloodLabel(r.bloodType)}
                               </span>
@@ -329,7 +331,6 @@ function HospitalDashboardPage() {
                                     flash={flash?.requestId === detail.id ? flash.text : null}
                                     onUpdated={onUpdated}
                                     onAuthFailed={fail}
-                                    onNavigate={navigate}
                                 />
                             ) : null}
                           </aside>

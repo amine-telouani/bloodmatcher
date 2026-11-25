@@ -1,0 +1,55 @@
+@import './map.css';
+
+@theme {
+  --color-cream: #fdf0ed;
+  --color-pink: #f8c3cc;
+  --color-blush: #f9d9dc;
+  --color-red: #ee4450;
+  --color-red-dark: #d32f3c;
+  --color-red-deep: #b42532; /* hover / small red text on blush */
+  --color-ink: #262222;
+  --color-ink-soft: #4a3f40; /* secondary text that must stay readable on pink */
+  --color-muted: #6b5f60; /* secondary text on cream / paper only */
+  --color-paper: #fff9f7; /* card surface */
+
+  --font-display: 'Fredoka', ui-rounded, system-ui, sans-serif;
+  --font-sans: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-hand: 'Caveat', cursive;
+
+  --ease-out-soft: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  .animation-page { -webkit-font-smoothing: antialiased; }
+  .animation-page :focus-visible { outline: 2px solid var(--color-red-dark); outline-offset: 3px; }
+}
+.dd-account-grid { display: grid; gap: 24px; margin-top: 28px; align-items: start; }
+.dd-account-grid > .dd-profile { margin-top: 0; }
+@media (min-width: 900px) {
+  .dd-account-grid { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .animation-page *, .animation-page *::before, .animation-page *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Decorative art stays in its own paint area and never intercepts input. */
+.bm-main { isolation: isolate; }
+.bm-main > .bm-heart { pointer-events: none; user-select: none; z-index: 0; }
+.bm-main > .bm-heart.bm-heart-1 { top: 4px; left: 4px; right: auto; bottom: auto; }
+.bm-main > .bm-heart.bm-heart-2 { bottom: 4px; left: 4px; top: auto; right: auto; }
+.bm-main > .bm-heart.bm-heart-3 { top: 4px; right: 4px; left: auto; bottom: auto; }
+.bm-main > .bm-intro, .bm-main > .bm-card { position: relative; z-index: 1; }
+.bm-bag, .bm-follow { pointer-events: none; user-select: none; }
+.animation-page section[id], .animation-page main[id] { scroll-margin-top: 100px; }
+@media (pointer: coarse) {
+  .animation-page nav a, .animation-page nav button { min-height: 44px; }
+}
+
+#root { position: relative; }
